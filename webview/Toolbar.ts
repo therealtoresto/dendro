@@ -25,15 +25,14 @@ export class Toolbar {
     element.innerHTML = `
       <button class="tool tool-repo" title="Choose repository">${Icons.render('repo')}<span class="tool-label"></span></button>
       <button class="tool tool-branch" title="Checkout another branch">${Icons.render('branch')}<span class="tool-label"></span></button>
-      <span class="tool-separator"></span>
-      <span class="remote-buttons"></span>
-      <button class="tool tool-refresh" title="Refresh">${Icons.render('refresh')}</button>
-      <span class="tool-separator"></span>
       <select class="tool tool-select branches-select" title="Which branches the graph shows">
         <option value="all">All branches</option>
         <option value="smart">Smart branches</option>
         <option value="current">Current branch</option>
       </select>
+      <span class="tool-separator"></span>
+      <span class="remote-buttons"></span>
+      <button class="tool tool-refresh" title="Refresh">${Icons.render('refresh')}</button>
       <div class="search">
         ${Icons.render('search')}
         <input class="search-input" type="text" placeholder="Search message, author or SHA  (Enter = next)" spellcheck="false">
