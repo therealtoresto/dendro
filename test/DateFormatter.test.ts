@@ -13,9 +13,9 @@ describe('DateFormatter', () => {
     assert.equal(formatter.formatFull(moment), 'November 3rd, 2026 2:05pm');
   });
 
-  it('writes a readable date with the month in words and no comma inside the date', () => {
+  it('writes a readable date with the short month name and no comma inside the date', () => {
     const formatter = new DateFormatter(settings, 'en-US');
-    assert.equal(formatter.formatReadable(moment).replace(/\u202f/g, ' '), 'November 3 2026, 2:05 PM');
+    assert.equal(formatter.formatReadable(moment).replace(/\u202f/g, ' '), 'Nov 3 2026, 2:05 PM');
   });
 
   it('formats every token and keeps [bracketed] text', () => {

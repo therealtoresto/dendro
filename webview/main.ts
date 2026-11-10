@@ -498,7 +498,7 @@ class GraphApp {
       getRowDate: (commit) => (useCommitDate ? commit.commitDate : commit.date),
       formatDate: (commit) => GraphApp.formatRowDate(dates, useCommitDate ? commit.commitDate : commit.date),
       formatTime: (unixSeconds) => GraphApp.formatRowDate(dates, unixSeconds),
-      // The longest month name with a two-digit day and hour: about the widest a date gets.
+      // A wide month name with a two-digit day and hour: about the widest a date gets.
       longDateSample: GraphApp.formatRowDate(dates, new Date(2026, 8, 28, 22, 58).getTime() / 1000).long,
       formatDay: (unixSeconds) => dates.formatShortDate(unixSeconds),
     };
