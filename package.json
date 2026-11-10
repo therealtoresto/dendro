@@ -449,6 +449,21 @@
             "default": true,
             "type": "boolean"
           },
+          "dendro.graph.density": {
+            "description": "Row height",
+            "default": "comfortable",
+            "type": "string",
+            "enum": [
+              "compact",
+              "comfortable",
+              "spacious"
+            ],
+            "enumDescriptions": [
+              "compact",
+              "comfortable",
+              "spacious"
+            ]
+          },
           "dendro.graph.avatarNodes": {
             "description": "Show author pictures in the graph nodes. Merge commits stay small dots, so the history of a branch reads at a glance.",
             "default": true,

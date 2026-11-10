@@ -443,8 +443,9 @@ class GraphApp {
     };
   }
 
-  private static readRowHeight(_settings: SettingValues): number {
-    return 28;
+  private static readRowHeight(settings: SettingValues): number {
+    const heights: Record<string, number> = { compact: 24, comfortable: 28, spacious: 34 };
+    return heights[String(settings['graph.density'])] ?? heights.comfortable;
   }
 
   private static readList(value: unknown): string[] {

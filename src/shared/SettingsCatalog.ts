@@ -223,6 +223,18 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
         default: true,
       },
       {
+        key: 'graph.density',
+        type: 'enum',
+        control: 'segmented',
+        label: 'Row height',
+        default: 'comfortable',
+        options: [
+          { value: 'compact', label: 'compact' },
+          { value: 'comfortable', label: 'comfortable' },
+          { value: 'spacious', label: 'spacious' },
+        ],
+      },
+      {
         key: 'graph.avatarNodes',
         type: 'boolean',
         control: 'checkbox',
