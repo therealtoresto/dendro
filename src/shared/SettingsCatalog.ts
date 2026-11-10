@@ -223,6 +223,14 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
         default: true,
       },
       {
+        key: 'graph.avatarNodes',
+        type: 'boolean',
+        control: 'checkbox',
+        label: 'Show author pictures in the graph nodes',
+        default: true,
+        note: 'Merge commits stay small dots, so the history of a branch reads at a glance.',
+      },
+      {
         key: 'graph.rowHover.enabled',
         type: 'boolean',
         control: 'checkbox',

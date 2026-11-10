@@ -370,7 +370,8 @@ class GraphApp {
   private renderList(): void {
     const state = this.state;
     const settings = this.settings;
-    const autoGraphWidth = GraphRenderer.getGraphWidth(this.layout.maxLanes, Number(settings['graph.maxGraphWidth'] ?? 220));
+    const metrics = GraphRenderer.createMetrics(GraphApp.readRowHeight(settings), settings['graph.avatarNodes'] !== false);
+    const autoGraphWidth = GraphRenderer.getGraphWidth(this.layout.maxLanes, Number(settings['graph.maxGraphWidth'] ?? 220), metrics);
     const graphWidth = this.columnWidths.graph ?? autoGraphWidth;
     Columns.applyWidths(this.columnWidths, graphWidth);
 
@@ -402,6 +403,7 @@ class GraphApp {
       matches: this.search?.matches ?? null,
       working: state?.working ?? { total: 0, added: 0, modified: 0, deleted: 0, conflicted: 0, staged: 0 },
       graphWidth,
+      metrics,
       loading: this.loading,
       hasMore: this.hasMore,
       scrollAheadRows: Number(settings['graph.scrollAheadRows'] ?? 60),
@@ -438,6 +440,10 @@ class GraphApp {
       },
       formatDay: (unixSeconds) => dates.formatShortDate(unixSeconds),
     };
+  }
+
+  private static readRowHeight(_settings: SettingValues): number {
+    return 28;
   }
 
   private static readList(value: unknown): string[] {

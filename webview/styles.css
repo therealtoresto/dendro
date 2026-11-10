@@ -1340,3 +1340,46 @@ mark {
   color: var(--fg);
   background: var(--hover);
 }
+
+/* Picture nodes */
+
+.cell.graph {
+  position: relative;
+}
+
+.graph-node {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 0 0 2px var(--lane);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.graph-node img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.graph-node.node-head {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--lane);
+}
+
+.row.selected .graph-node.node-head {
+  box-shadow: 0 0 0 2px var(--selected), 0 0 0 4px var(--lane);
+}
+
+.graph-node.node-incoming {
+  opacity: 0.55;
+  box-shadow: none;
+  outline: 2px dashed var(--lane);
+  outline-offset: 1px;
+}

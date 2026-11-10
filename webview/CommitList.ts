@@ -3,7 +3,7 @@ import { ColumnId, Columns } from './Columns';
 import { AvatarStyle } from '../src/shared/AvatarStyle';
 import { Format } from './Format';
 import type { GraphLayoutResult } from './GraphLayout';
-import { GraphRenderer, NodeStyle, ROW_HEIGHT } from './GraphRenderer';
+import { GraphMetrics, GraphRenderer, NodeStyle } from './GraphRenderer';
 import { Icons } from './Icons';
 import type { RowMarker } from './Markers';
 import { Minimap } from './Minimap';
@@ -44,6 +44,7 @@ export interface ListModel {
   matches: Set<string> | null;
   working: WorkingSummary;
   graphWidth: number;
+  metrics: GraphMetrics;
   loading: boolean;
   hasMore: boolean;
   scrollAheadRows: number;
@@ -124,9 +125,14 @@ export class CommitList {
     });
   }
 
+  private get rowHeight(): number {
+    return this.model?.metrics.rowHeight ?? 28;
+  }
+
   setModel(model: ListModel): void {
     this.model = model;
-    this.sizer.style.height = `${model.rows.length * ROW_HEIGHT}px`;
+    document.documentElement.style.setProperty('--row-height', `${model.metrics.rowHeight}px`);
+    this.sizer.style.height = `${model.rows.length * this.rowHeight}px`;
     this.footer.textContent = model.loading ? 'Loading commits…' : model.hasMore ? '' : CommitList.describeEnd(model);
 
     const columnsKey = model.display.columns.join(',');
@@ -143,22 +149,22 @@ export class CommitList {
   }
 
   scrollToIndex(index: number, align: 'nearest' | 'center' = 'nearest'): void {
-    const top = index * ROW_HEIGHT;
+    const top = index * this.rowHeight;
     const viewTop = this.scroller.scrollTop;
     const viewHeight = this.scroller.clientHeight;
 
     if (align === 'center') {
-      this.scroller.scrollTop = Math.max(0, top - viewHeight / 2 + ROW_HEIGHT / 2);
+      this.scroller.scrollTop = Math.max(0, top - viewHeight / 2 + this.rowHeight / 2);
     } else if (top < viewTop) {
       this.scroller.scrollTop = top;
-    } else if (top + ROW_HEIGHT > viewTop + viewHeight) {
-      this.scroller.scrollTop = top + ROW_HEIGHT - viewHeight;
+    } else if (top + this.rowHeight > viewTop + viewHeight) {
+      this.scroller.scrollTop = top + this.rowHeight - viewHeight;
     }
     this.queueRender();
   }
 
   getPageRowCount(): number {
-    return Math.max(1, Math.floor(this.scroller.clientHeight / ROW_HEIGHT) - 1);
+    return Math.max(1, Math.floor(this.scroller.clientHeight / this.rowHeight) - 1);
   }
 
   private readColumnWidth(id: ColumnId): number {
@@ -182,8 +188,8 @@ export class CommitList {
       return;
     }
 
-    const firstOnScreen = Math.floor(this.scroller.scrollTop / ROW_HEIGHT);
-    const visibleCount = Math.ceil(this.scroller.clientHeight / ROW_HEIGHT);
+    const firstOnScreen = Math.floor(this.scroller.scrollTop / this.rowHeight);
+    const visibleCount = Math.ceil(this.scroller.clientHeight / this.rowHeight);
     const first = Math.max(0, firstOnScreen - OVERSCAN_ROWS);
     const last = Math.min(model.rows.length, firstOnScreen + visibleCount + OVERSCAN_ROWS);
 
@@ -231,7 +237,7 @@ export class CommitList {
 
     const cells = commit ? this.renderCommitCells(model, index, commit) : this.renderWorkingCells(model, index);
     const cellsHtml = model.display.columns.map((id) => `<div class="cell ${id}">${cells[id]}</div>`).join('');
-    const top = `style="top:${index * ROW_HEIGHT}px"`;
+    const top = `style="top:${index * this.rowHeight}px"`;
 
     if (!commit) {
       return `<div class="${classes.join(' ')} working" ${top} data-key="${WORKING_CHANGES_KEY}">${cellsHtml}</div>`;
@@ -264,7 +270,7 @@ export class CommitList {
 
     return {
       refs: '',
-      graph: GraphRenderer.renderRow(model.layout.rows[index], model.graphWidth, 'working'),
+      graph: GraphRenderer.renderRow(model.layout.rows[index], model.graphWidth, 'working', model.metrics),
       message: `<span class="subject">Working Changes</span>${WorkingCounters.render(working, true)}`,
       author: '',
       changes,
@@ -297,7 +303,11 @@ export class CommitList {
 
     return {
       refs: badges,
-      graph: GraphRenderer.renderRow(layout, model.graphWidth, nodeStyle),
+      graph: GraphRenderer.renderRow(layout, model.graphWidth, nodeStyle, model.metrics, {
+        initials: Format.escapeHtml(AvatarStyle.getInitials(commit.author)),
+        color: AvatarStyle.getColor(commit.email),
+        image: model.avatars.get(commit.email.toLowerCase()),
+      }),
       message: `${inlineBadges}<span class="subject">${Format.highlight(commit.subject, model.searchQuery)}</span>${body}`,
       author: CommitList.renderAuthor(commit, display.avatars, model.avatars.get(commit.email.toLowerCase())),
       changes: CommitList.renderChanges(model.statsByHash.get(commit.hash), model.largestChange),
