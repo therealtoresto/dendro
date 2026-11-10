@@ -394,7 +394,7 @@ class GraphApp {
       loading: this.loading,
       hasMore: this.hasMore,
       scrollAheadRows: Number(settings['graph.scrollAheadRows'] ?? 60),
-      minimapMarkers: settings['graph.minimap.enabled'] === false ? null : Markers.collect(markerSource, minimapKinds),
+      minimapMarkers: settings['graph.minimap.enabled'] === true ? Markers.collect(markerSource, minimapKinds) : null,
       scrollMarkers: settings['graph.scrollMarkers.enabled'] === false ? null : Markers.collect(markerSource, scrollKinds),
     };
     this.list.setModel(model);

@@ -269,7 +269,7 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
         type: 'boolean',
         control: 'checkbox',
         label: 'Show daily commit activity above the graph',
-        default: true,
+        default: false,
       },
       {
         key: 'graph.minimap.kinds',

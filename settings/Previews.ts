@@ -119,7 +119,7 @@ export class Previews {
     ];
 
     const minimap =
-      values['graph.minimap.enabled'] !== false
+      values['graph.minimap.enabled'] === true
         ? `<div class="pv-minimap">${Array.from({ length: 48 }, (_, index) => `<i style="height:${4 + ((index * 37) % 23)}px"></i>`).join('')}</div>`
         : '';
 

@@ -2,7 +2,7 @@
   "name": "dendro",
   "displayName": "Dendro",
   "description": "Reads your git tree like tree rings: commit graph, pull / push, the changes and files of every commit.",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "tarasbondaruk",
   "license": "UNLICENSED",
   "private": true,
@@ -493,7 +493,7 @@
           },
           "dendro.graph.minimap.enabled": {
             "description": "Show daily commit activity above the graph",
-            "default": true,
+            "default": false,
             "type": "boolean"
           },
           "dendro.graph.minimap.kinds": {
