@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { Repository } from './git/git';
 import { GitCommandError, GitService } from './git/GitService';
 import type { RefInfo, RemoteAction } from './protocol';
+import { Settings } from './Settings';
 
 interface CommitTarget {
   hash: string;
@@ -31,7 +32,7 @@ export class RepoActions {
     } else if (action === 'push') {
       await this.push();
     } else {
-      const prune = vscode.workspace.getConfiguration('dendro').get<boolean>('fetchPrune', true);
+      const prune = Settings.get<boolean>('graph.fetchPrune');
       await this.runRemoteTask('fetch', 'Fetching', () => this.repo.fetch({ all: true, prune }));
     }
   }
