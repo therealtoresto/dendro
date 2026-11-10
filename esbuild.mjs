@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { copyFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 
 const watch = process.argv.includes('--watch');
 
@@ -43,11 +43,23 @@ const builds = [
   },
 ];
 
+// Each page's stylesheet: the shared glass tokens, the page's own rules in the "base" layer, then the page's
+// glass rules on top of them (cascade layers, so a glass rule wins without fighting specificity).
+const buildPageStyles = async (page, bundle) => {
+  const glass = await readFile('src/shared/glass.css', 'utf8');
+  const base = await readFile(`${page}/styles.css`, 'utf8');
+  const pageGlass = await access(`${page}/glass.css`).then(
+    () => readFile(`${page}/glass.css`, 'utf8'),
+    () => '',
+  );
+  await writeFile(`dist/${bundle}.css`, `${glass}\n@layer base {\n${base}\n}\n${pageGlass}`);
+};
+
 const copyStyles = () =>
   Promise.all([
-    copyFile('webview/styles.css', 'dist/webview.css'),
-    copyFile('settings/styles.css', 'dist/settings.css'),
-    copyFile('history/styles.css', 'dist/history.css'),
+    buildPageStyles('webview', 'webview'),
+    buildPageStyles('settings', 'settings'),
+    buildPageStyles('history', 'history'),
   ]);
 
 if (watch) {

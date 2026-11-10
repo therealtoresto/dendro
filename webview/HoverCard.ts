@@ -32,7 +32,7 @@ export class HoverCard {
 
   constructor() {
     this.element = document.createElement('div');
-    this.element.className = 'hover-card';
+    this.element.className = 'hover-card glass-strong';
     this.element.hidden = true;
     document.body.appendChild(this.element);
 

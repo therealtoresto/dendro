@@ -33,7 +33,7 @@ class SettingsApp {
   private readonly content: HTMLElement;
 
   constructor(root: HTMLElement) {
-    root.innerHTML = '<nav class="nav"></nav><main class="content"></main>';
+    root.innerHTML = '<nav class="nav glass"></nav><main class="content"></main>';
     this.nav = root.querySelector('.nav')!;
     this.content = root.querySelector('.content')!;
     this.sectionId = (this.api.getState() as { section?: string } | undefined)?.section ?? 'graph';
@@ -128,8 +128,8 @@ class SettingsApp {
           <p>${section.description}</p>
         </div>
       </header>
-      ${preview ? `<div class="preview"><div class="preview-title">Live preview</div>${preview}</div>` : ''}
-      <div class="items">${section.items.map((item) => this.renderItem(item)).join('')}</div>
+      ${preview ? `<div class="preview glass"><div class="preview-title">Live preview</div>${preview}</div>` : ''}
+      <div class="items glass">${section.items.map((item) => this.renderItem(item)).join('')}</div>
       <footer class="section-footer">
         For every option in JSON, open the
         <a data-native-settings="dendro.${settingsQuery}">Settings UI</a>

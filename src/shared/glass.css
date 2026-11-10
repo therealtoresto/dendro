@@ -1,0 +1,132 @@
+/* Liquid glass: translucent layers over a soft colored ambience, with a light edge and depth.
+   Shared by every Dendro page; each page's own styles live in the "base" layer below this one. */
+
+@layer base, glass;
+
+@layer glass {
+  :root {
+    --glass-radius-lg: 18px;
+    --glass-radius-md: 13px;
+    --glass-radius-sm: 9px;
+    --glass-radius-pill: 999px;
+    --glass-blur: 24px;
+    --glass-saturate: 180%;
+    --glass-fill: color-mix(in srgb, var(--vscode-editor-background) 56%, transparent);
+    --glass-fill-strong: color-mix(in srgb, var(--vscode-editor-background) 80%, transparent);
+    --glass-sheen: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 45%, rgba(255, 255, 255, 0));
+    --glass-edge: rgba(255, 255, 255, 0.16);
+    --glass-edge-soft: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), 0 2px 8px rgba(0, 0, 0, 0.22);
+    --glass-hover: color-mix(in srgb, var(--vscode-foreground) 8%, transparent);
+    --glass-press: color-mix(in srgb, var(--vscode-foreground) 14%, transparent);
+    --glass-accent: var(--vscode-focusBorder, #3b82f6);
+    --ambient-1: rgba(59, 130, 246, 0.16);
+    --ambient-2: rgba(168, 85, 247, 0.13);
+    --ambient-3: rgba(20, 184, 166, 0.11);
+    --ease-spring: cubic-bezier(0.2, 0.9, 0.25, 1.12);
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  body.vscode-light {
+    --glass-fill: color-mix(in srgb, #ffffff 62%, transparent);
+    --glass-fill-strong: color-mix(in srgb, #ffffff 84%, transparent);
+    --glass-sheen: linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.35) 45%, rgba(255, 255, 255, 0.15));
+    --glass-edge: rgba(255, 255, 255, 0.95);
+    --glass-edge-soft: rgba(0, 0, 0, 0.07);
+    --glass-shadow: 0 12px 30px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.08);
+    --ambient-1: rgba(59, 130, 246, 0.14);
+    --ambient-2: rgba(168, 85, 247, 0.1);
+    --ambient-3: rgba(20, 184, 166, 0.1);
+  }
+
+  /* High contrast themes keep solid surfaces and plain borders. */
+  body.vscode-high-contrast {
+    --glass-fill: var(--vscode-editor-background);
+    --glass-fill-strong: var(--vscode-editor-background);
+    --glass-sheen: none;
+    --glass-edge: var(--vscode-contrastBorder, #fff);
+    --glass-shadow: none;
+    --ambient-1: transparent;
+    --ambient-2: transparent;
+    --ambient-3: transparent;
+  }
+
+  /* The ambience behind the glass: without something colored behind it, glass reads as grey. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -20%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(40% 35% at 15% 10%, var(--ambient-1), transparent 70%),
+      radial-gradient(35% 40% at 85% 20%, var(--ambient-2), transparent 70%),
+      radial-gradient(45% 40% at 60% 95%, var(--ambient-3), transparent 70%);
+  }
+
+  .glass,
+  .glass-strong {
+    position: relative;
+    background: var(--glass-sheen), var(--glass-fill);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border: 1px solid var(--glass-edge-soft);
+    border-radius: var(--glass-radius-md);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-edge), inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  }
+
+  .glass-strong {
+    background: var(--glass-sheen), var(--glass-fill-strong);
+  }
+
+  /* A light edge that is brighter at the top left, like light caught on a rim. */
+  .glass::after,
+  .glass-strong::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.04) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.14));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  body.vscode-high-contrast .glass::after,
+  body.vscode-high-contrast .glass-strong::after {
+    display: none;
+  }
+
+  @keyframes glass-rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes glass-fade {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}

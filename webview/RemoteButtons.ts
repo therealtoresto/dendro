@@ -67,7 +67,7 @@ export class RemoteButtons {
     }
 
     this.popover = document.createElement('div');
-    this.popover.className = 'tool-popover';
+    this.popover.className = 'tool-popover glass-strong';
     this.popover.hidden = true;
     document.body.appendChild(this.popover);
     this.popover.addEventListener('mouseenter', () => window.clearTimeout(this.popoverTimer));

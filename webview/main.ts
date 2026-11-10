@@ -66,12 +66,12 @@ class GraphApp {
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <header class="toolbar"></header>
+      <header class="toolbar glass"></header>
       <div class="error-bar" hidden></div>
       <main class="layout">
         <section class="list"></section>
         <div class="splitter" title="Drag to resize"></div>
-        <aside class="details"></aside>
+        <aside class="details glass"></aside>
       </main>`;
 
     const viewState = HostBridge.readViewState();

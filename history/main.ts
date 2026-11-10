@@ -74,9 +74,9 @@ class HistoryApp {
     root.innerHTML = `
       <header class="fh-header"></header>
       <div class="fh-controls"></div>
-      <section class="fh-chart" tabindex="0" aria-label="File history chart"></section>
-      <section class="fh-table" hidden></section>
-      <div class="fh-tooltip" hidden></div>`;
+      <section class="fh-chart glass" tabindex="0" aria-label="File history chart"></section>
+      <section class="fh-table glass" hidden></section>
+      <div class="fh-tooltip glass-strong" hidden></div>`;
     this.header = root.querySelector('.fh-header')!;
     this.controls = root.querySelector('.fh-controls')!;
     this.chart = root.querySelector('.fh-chart')!;

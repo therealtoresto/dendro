@@ -70,6 +70,8 @@ const OVERSCAN_ROWS = 12;
 
 export class CommitList {
   private readonly header: HTMLElement;
+  private readonly overlay: HTMLElement;
+  private inset = 0;
   private readonly scroller: HTMLElement;
   private readonly sizer: HTMLElement;
   private readonly rowsElement: HTMLElement;
@@ -86,15 +88,20 @@ export class CommitList {
     container: HTMLElement,
     private readonly handlers: ListHandlers,
   ) {
+    // The column header (and the activity strip) float over the rows, which scroll on beneath them.
     container.innerHTML = `
-      <div class="minimap"></div>
-      <div class="list-header"></div>
       <div class="list-body">
         <div class="list-scroller" tabindex="0">
           <div class="list-sizer"><div class="list-rows"></div></div>
           <div class="list-footer"></div>
         </div>
+      </div>
+      <div class="list-overlay glass">
+        <div class="minimap"></div>
+        <div class="list-header"></div>
       </div>`;
+    this.overlay = container.querySelector('.list-overlay')!;
+    new ResizeObserver(() => this.updateInset()).observe(this.overlay);
 
     this.header = container.querySelector('.list-header')!;
     this.scroller = container.querySelector('.list-scroller')!;
@@ -153,23 +160,30 @@ export class CommitList {
     this.scroller.focus({ preventScroll: true });
   }
 
+  // Row positions count from the top of the rows; the part of the view under the overlay does not count as seen.
   scrollToIndex(index: number, align: 'nearest' | 'center' = 'nearest'): void {
-    const top = index * this.rowHeight;
-    const viewTop = this.scroller.scrollTop;
-    const viewHeight = this.scroller.clientHeight;
+    const top = this.inset + index * this.rowHeight;
+    const viewTop = this.scroller.scrollTop + this.inset;
+    const viewHeight = this.scroller.clientHeight - this.inset;
 
     if (align === 'center') {
-      this.scroller.scrollTop = Math.max(0, top - viewHeight / 2 + this.rowHeight / 2);
+      this.scroller.scrollTop = Math.max(0, top - this.inset - viewHeight / 2 + this.rowHeight / 2);
     } else if (top < viewTop) {
-      this.scroller.scrollTop = top;
+      this.scroller.scrollTop = top - this.inset;
     } else if (top + this.rowHeight > viewTop + viewHeight) {
-      this.scroller.scrollTop = top + this.rowHeight - viewHeight;
+      this.scroller.scrollTop = top + this.rowHeight - this.scroller.clientHeight;
     }
     this.queueRender();
   }
 
   getPageRowCount(): number {
-    return Math.max(1, Math.floor(this.scroller.clientHeight / this.rowHeight) - 1);
+    return Math.max(1, Math.floor((this.scroller.clientHeight - this.inset) / this.rowHeight) - 1);
+  }
+
+  private updateInset(): void {
+    this.inset = this.overlay.offsetHeight;
+    this.sizer.style.marginTop = `${this.inset}px`;
+    this.queueRender();
   }
 
   private readColumnWidth(id: ColumnId): number {
@@ -194,7 +208,7 @@ export class CommitList {
     }
 
     const firstOnScreen = Math.floor(this.scroller.scrollTop / this.rowHeight);
-    const visibleCount = Math.ceil(this.scroller.clientHeight / this.rowHeight);
+    const visibleCount = Math.ceil((this.scroller.clientHeight - this.inset) / this.rowHeight);
     const first = Math.max(0, firstOnScreen - OVERSCAN_ROWS);
     const last = Math.min(model.rows.length, firstOnScreen + visibleCount + OVERSCAN_ROWS);
 
