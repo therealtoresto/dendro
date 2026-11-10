@@ -213,3 +213,12 @@ describe('GitOutputParser repository lists', () => {
     ]);
   });
 });
+
+describe('GitOutputParser.parseActivityStats', () => {
+  it('sums the lines of a commit and lists its files', () => {
+    const output = '\x1eaaa\n\n3\t1\tsrc/a.ts\n-\t-\tlogo.png\n\x1ebbb\n\n10\t0\tREADME.md\n';
+    const stats = GitOutputParser.parseActivityStats(output);
+    assert.deepEqual(stats.get('aaa'), { additions: 3, deletions: 1, files: ['src/a.ts', 'logo.png'] });
+    assert.deepEqual(stats.get('bbb'), { additions: 10, deletions: 0, files: ['README.md'] });
+  });
+});

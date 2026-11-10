@@ -42,6 +42,7 @@ export class Toolbar {
         <button class="icon-button search-next" title="Next match (Enter)">${Icons.render('down')}</button>
         <button class="icon-button search-clear" title="Clear (Esc)">${Icons.render('close')}</button>
       </div>
+      <button class="tool tool-insights" title="Repository insights">${Icons.render('pulse')}</button>
       <button class="tool tool-details" title="Show or hide the commit details">${Icons.render('sidePanel')}</button>
       <button class="tool tool-settings" title="Dendro settings">${Icons.render('gear')}</button>`;
 
@@ -59,6 +60,7 @@ export class Toolbar {
       HostBridge.post({ type: 'updateSetting', key: 'graph.showBranches', value: this.branchesSelect.value }),
     );
     element.querySelector('.tool-settings')!.addEventListener('click', () => HostBridge.post({ type: 'openSettings' }));
+    element.querySelector('.tool-insights')!.addEventListener('click', () => HostBridge.post({ type: 'openInsights' }));
     element.querySelector('.tool-details')!.addEventListener('click', () => handlers.onToggleDetails());
 
     this.searchInput.addEventListener('input', () => handlers.onSearchInput(this.searchInput.value));

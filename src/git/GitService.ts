@@ -13,6 +13,8 @@ import type {
   WorktreeInfo,
 } from '../protocol';
 import {
+  ActivityCommit,
+  ActivityStats,
   BranchSummary,
   Contributor,
   FIELD_SEPARATOR,
@@ -194,6 +196,29 @@ export class GitService {
   async getLineHistory(filePath: string, startLine: number, endLine: number, limit: number): Promise<HistoryEntry[]> {
     const args = ['log', `-L${startLine},${endLine}:${filePath}`, '-s', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`];
     return GitOutputParser.parseHistory(await this.run(args));
+  }
+
+  // The commits of HEAD since a moment (unix seconds), merges left out: who committed when.
+  async getActivity(since: number): Promise<ActivityCommit[]> {
+    const format = ['%H', '%an', '%ae', '%at'].join('%x1f');
+    return GitOutputParser.parseActivity(await this.run(['log', '--no-merges', `--since=@${since}`, `--format=${format}`, 'HEAD', '--']));
+  }
+
+  // The same commits with their line counts and files; slow on big repositories, so it is asked for separately.
+  async getActivityStats(since: number): Promise<Map<string, ActivityStats>> {
+    const args = ['log', '--no-merges', '--no-renames', `--since=@${since}`, '--format=%x1e%H', '--numstat', 'HEAD', '--'];
+    return GitOutputParser.parseActivityStats(await this.run(args));
+  }
+
+  async countCommits(): Promise<number> {
+    return Number((await this.readOptional(['rev-list', '--count', 'HEAD'])) ?? 0);
+  }
+
+  // The date of the oldest root commit of HEAD (unix seconds).
+  async getFirstCommitDate(): Promise<number | null> {
+    const output = await this.readOptional(['log', '--max-parents=0', '--format=%at', 'HEAD']);
+    const dates = (output ?? '').split('\n').filter(Boolean).map(Number);
+    return dates.length > 0 ? Math.min(...dates) : null;
   }
 
   // Commits the upstream has and HEAD does not: fetched, not pulled yet.

@@ -769,6 +769,9 @@ export class GraphController {
       case 'updateSetting':
         await Settings.update(message.key, message.value);
         return;
+      case 'openInsights':
+        await vscode.commands.executeCommand('dendro.showInsights', this.root);
+        return;
       case 'openSettings':
         await vscode.commands.executeCommand('dendro.showSettings', message.section ?? 'graph');
         return;

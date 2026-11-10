@@ -42,6 +42,15 @@ const builds = [
     sourcemap: true,
   },
   {
+    entryPoints: ['insights/main.ts'],
+    outfile: 'dist/insights.js',
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    target: 'es2022',
+    sourcemap: true,
+  },
+  {
     entryPoints: ['rebase/main.ts'],
     outfile: 'dist/rebase.js',
     bundle: true,
@@ -80,6 +89,7 @@ const copyStyles = () =>
     buildPageStyles('history', 'history'),
     buildPageStyles('compare', 'compare'),
     buildPageStyles('rebase', 'rebase'),
+    buildPageStyles('insights', 'insights'),
   ]);
 
 if (watch) {

@@ -31,6 +31,7 @@ const PATHS = {
   box: '<rect x="2.5" y="4.5" width="11" height="9" rx="1.5"/><path d="M2.5 7.5h11M6.5 10h3"/>',
   rings:
     '<circle cx="8" cy="8" r="6.5"/><circle cx="8.2" cy="8" r="4.2"/><circle cx="8.3" cy="8" r="2"/>',
+  pulse: '<path d="M1.5 8.5h3l1.5-4 3 8 1.5-4h4"/>',
   sidePanel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10 2.5v11"/>',
 } as const;
 

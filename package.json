@@ -415,6 +415,12 @@
         "command": "dendro.rebaseAbort",
         "title": "Abort Rebase",
         "category": "Dendro"
+      },
+      {
+        "command": "dendro.showInsights",
+        "title": "Show Repository Insights",
+        "category": "Dendro",
+        "icon": "$(pulse)"
       }
     ],
     "menus": {
@@ -627,6 +633,11 @@
           "command": "dendro.compare",
           "group": "navigation@2",
           "when": "view == dendro.branches"
+        },
+        {
+          "command": "dendro.showInsights",
+          "group": "navigation@1",
+          "when": "view == dendro.contributors"
         }
       ],
       "commandPalette": [
@@ -1761,7 +1772,7 @@
   "scripts": {
     "build": "npm run sync-config && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare && tsc --noEmit -p rebase",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare && tsc --noEmit -p rebase && tsc --noEmit -p insights",
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",

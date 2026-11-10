@@ -13,4 +13,6 @@
 !dist/compare.css
 !dist/rebase.js
 !dist/rebase.css
+!dist/insights.js
+!dist/insights.css
 !media/**

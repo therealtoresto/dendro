@@ -159,6 +159,7 @@ export type WebviewMessage =
   | { type: 'pickBranch' }
   | { type: 'updateSetting'; key: string; value: boolean | number | string | string[] }
   | { type: 'openSettings'; section?: string }
+  | { type: 'openInsights' }
   | { type: 'showComparison'; base: string; target: string }
   | { type: 'hoverCommit'; hash: string }
   | { type: 'commitAction'; action: CommitAction; hash: string }

@@ -57,6 +57,19 @@ export interface HistoryEntry {
   deletions?: number;
 }
 
+export interface ActivityCommit {
+  hash: string;
+  author: string;
+  email: string;
+  date: number;
+}
+
+export interface ActivityStats {
+  additions: number;
+  deletions: number;
+  files: string[];
+}
+
 interface LineStats {
   additions?: number;
   deletions?: number;
@@ -211,6 +224,42 @@ export class GitOutputParser {
       }
     }
     return contributors;
+  }
+
+  // `log --format=%H%x1f%an%x1f%ae%x1f%at`: one commit per line.
+  static parseActivity(output: string): ActivityCommit[] {
+    const commits: ActivityCommit[] = [];
+    for (const line of output.split('\n')) {
+      const [hash, author, email, date] = line.split(FIELD_SEPARATOR);
+      if (hash && date) {
+        commits.push({ hash, author, email: email.toLowerCase(), date: Number(date) });
+      }
+    }
+    return commits;
+  }
+
+  // `log --format=%x1e%H --numstat --no-renames`: per commit the lines added and deleted and the files it touched.
+  // Binary files count as touched with no lines.
+  static parseActivityStats(output: string): Map<string, ActivityStats> {
+    const statsByHash = new Map<string, ActivityStats>();
+    for (const record of output.split(RECORD_SEPARATOR)) {
+      const [hash, ...lines] = record.split('\n');
+      if (!hash.trim()) {
+        continue;
+      }
+      const stats: ActivityStats = { additions: 0, deletions: 0, files: [] };
+      for (const line of lines) {
+        const [additions, deletions, file] = line.split('\t');
+        if (file === undefined) {
+          continue;
+        }
+        stats.additions += additions === '-' ? 0 : Number(additions);
+        stats.deletions += deletions === '-' ? 0 : Number(deletions);
+        stats.files.push(file);
+      }
+      statsByHash.set(hash.trim(), stats);
+    }
+    return statsByHash;
   }
 
   // `stash list --format=%H%x1f%P%x1f%gd%x1f%gs%x1f%ct`: a stash is a commit on top of the commit it was made on.

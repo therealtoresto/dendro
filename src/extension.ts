@@ -15,6 +15,7 @@ import type { CommitAction } from './protocol';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
+import { InsightsPanel } from './insights/InsightsPanel';
 import { InteractiveRebase } from './rebase/InteractiveRebase';
 import { RebaseEditorProvider } from './rebase/RebaseEditorProvider';
 import { RepositoryViews } from './repository/RepositoryViews';
@@ -90,6 +91,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return InteractiveRebase.start(blame.createGit(controller.root), menu.hash, menu.hash.slice(0, 7));
       }
       return undefined;
+    }),
+    vscode.commands.registerCommand('dendro.showInsights', (root?: string) => {
+      const picked = typeof root === 'string' ? root : rootOfActiveEditor();
+      return picked ? InsightsPanel.show(context, blame, picked) : undefined;
     }),
     vscode.commands.registerCommand('dendro.rebaseContinue', () => {
       const root = rootOfActiveEditor();
