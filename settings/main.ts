@@ -106,8 +106,8 @@ class SettingsApp {
               const enabled = booleans.filter((item) => this.values[item.key] === true).length;
               const isOn = section.enabledKey ? this.values[section.enabledKey] === true : true;
               const count = booleans.length > 0 ? `<span class="nav-count">${enabled}/${booleans.length}</span>` : '';
-              return `<a class="nav-link${section.id === this.sectionId ? ' active' : ''}" data-section="${section.id}">
-                <span class="nav-dot${isOn ? ' on' : ''}"></span>${SettingsApp.renderIcon(section.id)}
+              return `<a class="nav-link${section.id === this.sectionId ? ' active' : ''}${isOn ? '' : ' off'}" data-section="${section.id}">
+                ${SettingsApp.renderIcon(section.id)}
                 <span class="nav-label">${section.title}</span>${count}</a>`;
             })
             .join('');

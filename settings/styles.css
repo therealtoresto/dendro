@@ -82,17 +82,8 @@ body {
   color: var(--vscode-list-activeSelectionForeground, var(--fg));
 }
 
-.nav-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: 1px solid var(--muted);
-  flex: none;
-}
-
-.nav-dot.on {
-  background: #3fb950;
-  border-color: #3fb950;
+.nav-link.off {
+  opacity: 0.55;
 }
 
 .nav-label {
