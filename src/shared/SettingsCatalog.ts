@@ -261,6 +261,13 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
         dependsOn: 'graph.rowHover.enabled',
       },
       {
+        key: 'graph.highlightBranchOnHover',
+        type: 'boolean',
+        control: 'checkbox',
+        label: 'Pointing at a branch badge fades the commits that are not on that branch',
+        default: true,
+      },
+      {
         key: 'graph.multiSelect',
         type: 'boolean',
         control: 'checkbox',

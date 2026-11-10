@@ -1618,3 +1618,7 @@ mark {
 .inline-badges .badge + .badge {
   flex-shrink: 4;
 }
+
+.row.branch-dim {
+  opacity: 0.3;
+}

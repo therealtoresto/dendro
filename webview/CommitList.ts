@@ -41,6 +41,7 @@ export interface ListModel {
   selectedKey: string | null;
   selectedLaneColor: number | null;
   compareKey: string | null;
+  branchHighlight: Set<string> | null;
   searchQuery: string;
   matches: Set<string> | null;
   working: WorkingSummary;
@@ -60,6 +61,7 @@ interface ListHandlers {
   onResizeColumn(id: ColumnId, width: number): void;
   onResetColumn(id: ColumnId): void;
   onRowHover(key: string, row: DOMRect, pointerX: number): void;
+  onBadgeHover(commitHash: string | null): void;
   onRowLeave(): void;
   onScroll(): void;
 }
@@ -78,6 +80,7 @@ export class CommitList {
   private headerColumns = '';
   private renderQueued = false;
   private hoveredKey: string | null = null;
+  private hoveredBadgeRow: string | null = null;
 
   constructor(
     container: HTMLElement,
@@ -115,6 +118,7 @@ export class CommitList {
     this.rowsElement.addEventListener('mouseover', (event) => this.onRowOver(event));
     this.rowsElement.addEventListener('mouseleave', () => {
       this.hoveredKey = null;
+      this.setBadgeHover(null);
       handlers.onRowLeave();
     });
     window.addEventListener('resize', () => this.queueRender());
@@ -234,6 +238,9 @@ export class CommitList {
     }
     if (model.matches) {
       classes.push(model.matches.has(row.key) ? 'match' : 'dim');
+    }
+    if (model.branchHighlight && !model.branchHighlight.has(row.key)) {
+      classes.push('branch-dim');
     }
 
     const cells = commit ? this.renderCommitCells(model, index, commit) : this.renderWorkingCells(model, index);
@@ -365,8 +372,26 @@ export class CommitList {
     );
   }
 
+  private setBadgeHover(rowKey: string | null): void {
+    if (rowKey !== this.hoveredBadgeRow) {
+      this.hoveredBadgeRow = rowKey;
+      this.handlers.onBadgeHover(rowKey);
+    }
+  }
+
   private onRowOver(event: MouseEvent): void {
-    const row = (event.target as HTMLElement).closest<HTMLElement>('.row');
+    const target = event.target as HTMLElement;
+    const row = target.closest<HTMLElement>('.row');
+    const overBadge = target.closest('.badge[data-ref-name]') !== null;
+    this.setBadgeHover(overBadge ? row?.dataset.key ?? null : null);
+
+    // A badge already explains itself and lights its branch; the commit card would only cover it.
+    if (overBadge) {
+      this.hoveredKey = null;
+      this.handlers.onRowLeave();
+      return;
+    }
+
     const key = row?.dataset.key ?? null;
     if (!row || !key || key === this.hoveredKey) {
       return;

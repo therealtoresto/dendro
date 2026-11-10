@@ -43,6 +43,7 @@ class GraphApp {
   private statsByHash = new Map<string, CommitStats>();
   private avatars = new Map<string, string>();
   private incoming = new Set<string>();
+  private branchHighlight: Set<string> | null = null;
   private hoverInfos = new Map<string, CommitHoverInfo>();
   private hoverTimer: number | undefined;
   private readonly hoverCard = new HoverCard();
@@ -92,6 +93,7 @@ class GraphApp {
       onResetColumn: (id) => this.resizeColumn(id, null),
       onRowHover: (key, row, pointerX) => this.onRowHover(key, row, pointerX),
       onRowLeave: () => this.onRowLeave(),
+      onBadgeHover: (hash) => this.highlightBranch(hash),
       onScroll: () => this.hideHover(),
     });
     this.details = new DetailsPanel(root.querySelector('.details')!, {
@@ -400,6 +402,7 @@ class GraphApp {
       selectedKey: this.selectedKey,
       selectedLaneColor: this.getSelectedLaneColor(),
       compareKey: this.compareKey,
+      branchHighlight: this.branchHighlight,
       searchQuery: this.search?.query ?? '',
       matches: this.search?.matches ?? null,
       working: state?.working ?? { total: 0, added: 0, modified: 0, deleted: 0, conflicted: 0, staged: 0 },
@@ -691,6 +694,32 @@ class GraphApp {
     event.preventDefault();
     const index = Math.min(this.rows.length - 1, Math.max(0, next));
     this.select(this.rows[index].key);
+  }
+
+  // The commits a branch holds among the loaded ones: everything reachable from its tip through parents.
+  private highlightBranch(tipHash: string | null): void {
+    if (tipHash === null || this.settings['graph.highlightBranchOnHover'] === false) {
+      if (this.branchHighlight) {
+        this.branchHighlight = null;
+        this.renderList();
+      }
+      return;
+    }
+
+    const parentsByHash = new Map(this.commits.map((commit) => [commit.hash, commit.parents]));
+    const reachable = new Set<string>();
+    const pending = [tipHash];
+    while (pending.length > 0) {
+      const hash = pending.pop()!;
+      if (reachable.has(hash) || !parentsByHash.has(hash)) {
+        continue;
+      }
+      reachable.add(hash);
+      pending.push(...parentsByHash.get(hash)!);
+    }
+
+    this.branchHighlight = reachable;
+    this.renderList();
   }
 
   private getSelectedLaneColor(): number | null {

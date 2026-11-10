@@ -481,6 +481,11 @@
             "minimum": 0,
             "maximum": 3000
           },
+          "dendro.graph.highlightBranchOnHover": {
+            "description": "Pointing at a branch badge fades the commits that are not on that branch",
+            "default": true,
+            "type": "boolean"
+          },
           "dendro.graph.multiSelect": {
             "description": "Compare two commits with Cmd/Ctrl+click",
             "default": true,
