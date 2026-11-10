@@ -4,6 +4,14 @@
   "description": "Reads your git tree like tree rings: commit graph, pull / push, the changes and files of every commit.",
   "version": "0.7.0",
   "publisher": "tarasbondaruk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/therealtoresto/dendro.git"
+  },
+  "homepage": "https://github.com/therealtoresto/dendro",
+  "bugs": {
+    "url": "https://github.com/therealtoresto/dendro/issues"
+  },
   "license": "UNLICENSED",
   "private": true,
   "engines": {
@@ -1670,7 +1678,7 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history",
     "test": "node --import tsx --test test/*.test.ts",
-    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --skip-license -o dendro.vsix",
+    "package": "npm run build && vsce package --no-dependencies --skip-license -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",
     "sync-config": "tsx scripts/syncConfig.ts"
   },
