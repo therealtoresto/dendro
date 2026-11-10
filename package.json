@@ -116,7 +116,7 @@
       },
       {
         "command": "dendro.createBranch",
-        "title": "Create Branch Here\u2026",
+        "title": "Create Branch Here…",
         "category": "Dendro"
       },
       {
@@ -131,7 +131,7 @@
       },
       {
         "command": "dendro.reset",
-        "title": "Reset Current Branch to This Commit\u2026",
+        "title": "Reset Current Branch to This Commit…",
         "category": "Dendro"
       },
       {
@@ -553,7 +553,7 @@
           },
           "dendro.inlineBlame.format": {
             "description": "Text. Tokens: ${author} ${email} ${ago} ${date} ${agoOrDate} ${message} ${sha}. ${message|50} cuts a value to 50 characters, ${ago|14-} pads it to 14.",
-            "default": "${author}, ${agoOrDate} \u2022 ${message|50}",
+            "default": "${author}, ${agoOrDate} • ${message|50}",
             "type": "string"
           }
         }
@@ -926,8 +926,8 @@
               "committed"
             ],
             "enumDescriptions": [
-              "when it was written \u2014 author date (default)",
-              "when it was committed \u2014 committer date"
+              "when it was written — author date (default)",
+              "when it was committed — committer date"
             ]
           }
         }
