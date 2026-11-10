@@ -39,6 +39,7 @@ const COMMIT_SETTINGS = [
 const AVATAR_SETTINGS = ['graph.avatars', 'avatars.pictures', 'avatars.sources', 'avatars.fallback'];
 const HOVER_CACHE_SIZE = 200;
 const AVATAR_FLUSH_MS = 120;
+const MAX_INCOMING = 2000;
 
 export interface MenuContext {
   webview?: string;
@@ -309,8 +310,12 @@ export class GraphController {
     }
     this.head = head;
     this.refs = refs;
-    const [lastFetch, working] = await Promise.all([git.getLastFetchTime(), this.summarizeWorkingChanges(git)]);
-    this.postState(lastFetch, working);
+    const [lastFetch, working, incoming] = await Promise.all([
+      git.getLastFetchTime(),
+      this.summarizeWorkingChanges(git),
+      head.behind > 0 ? git.getIncomingHashes(MAX_INCOMING).catch(() => []) : Promise.resolve([]),
+    ]);
+    this.postState(lastFetch, working, incoming);
 
     // A repository can carry thousands of tags; they cross to the webview only when one of them moved.
     const refsSignature = refs.map((ref) => `${ref.kind}${ref.name}${ref.hash}${ref.ahead ?? ''}${ref.behind ?? ''}`).join('\n');
@@ -327,7 +332,11 @@ export class GraphController {
     }
   }
 
-  private postState(lastFetch: number | null, working: WorkingSummary = this.summarizeWorkingFiles()): void {
+  private postState(
+    lastFetch: number | null,
+    working: WorkingSummary = this.summarizeWorkingFiles(),
+    incoming: string[] = [],
+  ): void {
     const state: GraphState = {
       repos: this.api.repositories.map((repo) => ({
         root: repo.rootUri.fsPath,
@@ -336,6 +345,7 @@ export class GraphController {
       root: this.repo?.rootUri.fsPath ?? null,
       head: this.head,
       working,
+      incoming,
       lastFetch,
       settings: Settings.readAll(),
       locale: Settings.getEditorLocale(),
@@ -370,8 +380,9 @@ export class GraphController {
     const head = this.head.hash ? ['HEAD'] : [];
     const mode = Settings.get<string>('graph.showBranches');
 
+    // The upstream belongs to the current branch too: its commits not pulled yet show up beside HEAD.
     if (mode === 'current') {
-      return head;
+      return this.head.upstream && head.length > 0 ? [...head, `refs/remotes/${this.head.upstream}`] : head;
     }
 
     if (mode === 'smart') {

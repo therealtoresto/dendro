@@ -30,17 +30,26 @@ interface LaneSlot {
   waitsFor: string;
   color: number;
   dashed: boolean;
+  hidden?: boolean;
 }
 
 export class GraphLayout {
   // Every lane waits for one commit hash. A commit takes the first lane waiting for it (others waiting for it
   // merge into it), its first parent continues that lane, and each further parent joins the lane already waiting
   // for it or opens a free one.
-  static compute(inputs: LayoutInput[]): GraphLayoutResult {
+  //
+  // `keepFirstLaneFor` holds the first lane for that commit (HEAD) from the top of the list, drawing nothing until
+  // the commit's row: newer commits (not pulled yet, other branches) then branch off to the right of it instead of
+  // taking its place.
+  static compute(inputs: LayoutInput[], keepFirstLaneFor?: string): GraphLayoutResult {
     const lanes: (LaneSlot | null)[] = [];
     const rows: RowLayout[] = [];
     let nextColor = 0;
     let maxLanes = 0;
+
+    if (keepFirstLaneFor) {
+      lanes[0] = { waitsFor: keepFirstLaneFor, color: nextColor++, dashed: false, hidden: true };
+    }
 
     for (const input of inputs) {
       const segments: Segment[] = [];
@@ -57,7 +66,7 @@ export class GraphLayout {
 
       for (let index = 0; index < lanes.length; index++) {
         const slot = lanes[index];
-        if (!slot || (index === lane && waiting.length === 0)) {
+        if (!slot || slot.hidden || (index === lane && waiting.length === 0)) {
           continue;
         }
         const toLane = slot.waitsFor === input.hash ? lane : index;

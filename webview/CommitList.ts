@@ -34,6 +34,7 @@ export interface ListModel {
   refsByHash: Map<string, RefInfo[]>;
   statsByHash: Map<string, CommitStats>;
   avatars: Map<string, string>;
+  incoming: Set<string>;
   largestChange: number;
   headHash: string | null;
   headBranch: string | null;
@@ -239,6 +240,9 @@ export class CommitList {
     if (commit.hash === model.headHash) {
       classes.push('head');
     }
+    if (model.incoming.has(commit.hash)) {
+      classes.push('incoming');
+    }
     if (model.display.dimMerges && commit.parents.length > 1) {
       classes.push('merge-dimmed');
     }
@@ -277,6 +281,8 @@ export class CommitList {
     let nodeStyle: NodeStyle = 'commit';
     if (isHead) {
       nodeStyle = 'head';
+    } else if (model.incoming.has(commit.hash)) {
+      nodeStyle = 'incoming';
     } else if (commit.parents.length > 1) {
       nodeStyle = 'merge';
     }

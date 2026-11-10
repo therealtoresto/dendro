@@ -1169,3 +1169,15 @@ mark {
   max-height: 260px;
   overflow-y: auto;
 }
+
+/* Commits fetched, not pulled yet */
+
+.hc-incoming {
+  margin-top: 8px;
+  color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  font-weight: 600;
+}
+
+.details-incoming {
+  border-left-color: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+}

@@ -167,6 +167,12 @@ export class GitService {
     };
   }
 
+  // Commits the upstream has and HEAD does not: fetched, not pulled yet.
+  async getIncomingHashes(limit: number): Promise<string[]> {
+    const output = await this.run(['rev-list', `--max-count=${limit}`, 'HEAD..@{upstream}']);
+    return output.split('\n').filter(Boolean);
+  }
+
   async getWorkingLineStats(): Promise<CommitStats> {
     return GitOutputParser.parseShortStatLine(await this.run(['diff', 'HEAD', '--shortstat']));
   }

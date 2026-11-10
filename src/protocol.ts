@@ -78,6 +78,7 @@ export interface GraphState {
   root: string | null;
   head: HeadInfo;
   working: WorkingSummary;
+  incoming: string[];
   lastFetch: number | null;
   settings: SettingValues;
   locale: string;

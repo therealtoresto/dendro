@@ -44,6 +44,7 @@ class GraphApp {
   private refsByHash = new Map<string, RefInfo[]>();
   private statsByHash = new Map<string, CommitStats>();
   private avatars = new Map<string, string>();
+  private incoming = new Set<string>();
   private hoverInfos = new Map<string, CommitHoverInfo>();
   private hoverTimer: number | undefined;
   private readonly hoverCard = new HoverCard();
@@ -136,7 +137,8 @@ class GraphApp {
           const laneColor = this.getLaneColor(message.details.hash);
           const refs = this.refsByHash.get(message.details.hash) ?? [];
           const avatar = this.avatars.get(message.details.email.toLowerCase());
-          this.details.showCommit(message.details, refs, this.state?.head.branch ?? null, laneColor, this.dates, avatar);
+          const incomingFrom = this.incoming.has(message.details.hash) ? this.state?.head.upstream ?? null : null;
+          this.details.showCommit(message.details, refs, this.state?.head.branch ?? null, laneColor, this.dates, avatar, incomingFrom);
         }
         return;
       case 'comparisonDetails': {
@@ -280,6 +282,7 @@ class GraphApp {
         avatar: this.avatars.get(commit.email.toLowerCase()),
         dates: this.dates,
         useCommitDate: this.settings['dates.source'] === 'committed',
+        incomingFrom: this.incoming.has(hash) ? this.state?.head.upstream ?? null : null,
       },
       info,
       row,
@@ -351,8 +354,17 @@ class GraphApp {
       inputs.push({ hash: commit.hash, parents: commit.parents });
     }
 
+    // Without a Working Changes row on top, HEAD still keeps the first lane, so commits above it branch off it.
+    const headHash = state?.head.hash ?? null;
+    const headIsBelowTop = headHash !== null && rows.length > 0 && rows[0].key !== headHash;
+    const keepFirstLaneFor =
+      headIsBelowTop && rows[0].key !== WORKING_CHANGES_KEY && this.commits.some((commit) => commit.hash === headHash)
+        ? headHash
+        : undefined;
+
     this.rows = rows;
-    this.layout = GraphLayout.compute(inputs);
+    this.incoming = new Set(state?.incoming ?? []);
+    this.layout = GraphLayout.compute(inputs, keepFirstLaneFor);
     this.renderList();
     this.updateSearchStatus();
   }
@@ -382,6 +394,7 @@ class GraphApp {
       refsByHash: this.refsByHash,
       statsByHash: this.statsByHash,
       avatars: this.avatars,
+      incoming: this.incoming,
       largestChange: this.largestChange,
       headHash: state?.head.hash ?? null,
       headBranch: state?.head.branch ?? null,

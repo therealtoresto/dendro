@@ -15,6 +15,7 @@ export interface HoverSubject {
   avatar: string | undefined;
   dates: DateFormatter;
   useCommitDate: boolean;
+  incomingFrom: string | null;
 }
 
 const MAX_WIDTH = 540;
@@ -118,6 +119,7 @@ export class HoverCard {
           </div>
         </div>
       </div>
+      ${subject.incomingFrom ? `<div class="hc-incoming">↓ On ${Format.escapeHtml(subject.incomingFrom)}, not pulled yet</div>` : ''}
       ${badges ? `<div class="hc-badges">${badges}</div>` : ''}
       <div class="hc-message">
         <div class="hc-title">${Format.escapeHtml(title)}</div>

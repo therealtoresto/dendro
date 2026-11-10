@@ -89,3 +89,35 @@ describe('GraphLayout', () => {
     assert.deepEqual(getSegments(rows[1], 'bottom'), ['0>0']);
   });
 });
+
+describe('GraphLayout with the first lane kept for HEAD', () => {
+  // Two commits fetched from the upstream, not pulled yet, on top of the local HEAD.
+  const inputs = [
+    { hash: 'up2', parents: ['up1'] },
+    { hash: 'up1', parents: ['head'] },
+    { hash: 'head', parents: ['base'] },
+    { hash: 'base', parents: [] },
+  ];
+
+  it('puts the newer commits in their own lane that branches off HEAD', () => {
+    const { rows } = GraphLayout.compute(inputs, 'head');
+
+    assert.deepEqual(rows.map((row) => row.lane), [1, 1, 0, 0]);
+    assert.deepEqual(getSegments(rows[0], 'top'), []);
+    assert.deepEqual(getSegments(rows[2], 'top'), ['1>0']);
+    assert.deepEqual(getSegments(rows[2], 'bottom'), ['0>0']);
+  });
+
+  it('draws nothing in the kept lane above HEAD', () => {
+    const { rows } = GraphLayout.compute(inputs, 'head');
+
+    for (const row of rows.slice(0, 2)) {
+      assert.ok(row.segments.every((segment) => segment.fromLane !== 0 && segment.toLane !== 0));
+    }
+  });
+
+  it('keeps one straight lane without it', () => {
+    const { rows } = GraphLayout.compute(inputs);
+    assert.deepEqual(rows.map((row) => row.lane), [0, 0, 0, 0]);
+  });
+});

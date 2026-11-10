@@ -18,7 +18,7 @@ const PALETTE = [
   '#6366f1',
 ];
 
-export type NodeStyle = 'commit' | 'merge' | 'head' | 'working';
+export type NodeStyle = 'commit' | 'merge' | 'head' | 'working' | 'incoming';
 
 export class GraphRenderer {
   static getColor(colorIndex: number): string {
@@ -53,10 +53,21 @@ export class GraphRenderer {
   private static renderNode(x: number, y: number, colorIndex: number, nodeStyle: NodeStyle): string {
     const color = GraphRenderer.getColor(colorIndex);
     switch (nodeStyle) {
+      // Uncommitted work: a dash-dot ring around a dot.
       case 'working':
-        return `<circle cx="${x}" cy="${y}" r="4.5" stroke="${color}" stroke-dasharray="2 2" class="node-hollow"/>`;
+        return (
+          `<circle cx="${x}" cy="${y}" r="6" stroke="${color}" stroke-width="1.6" stroke-dasharray="3 1.6 0.8 1.6" class="node-hollow"/>` +
+          `<circle cx="${x}" cy="${y}" r="2.2" fill="${color}" stroke="none"/>`
+        );
+      // The checked-out commit: a dot inside a ring.
       case 'head':
-        return `<circle cx="${x}" cy="${y}" r="5" stroke="${color}" stroke-width="2.5" class="node-hollow"/>`;
+        return (
+          `<circle cx="${x}" cy="${y}" r="6" stroke="${color}" stroke-width="1.8" class="node-hollow"/>` +
+          `<circle cx="${x}" cy="${y}" r="3.2" fill="${color}" stroke="none"/>`
+        );
+      // Fetched, not pulled yet: an empty ring.
+      case 'incoming':
+        return `<circle cx="${x}" cy="${y}" r="4.5" stroke="${color}" stroke-width="2" class="node-hollow"/>`;
       case 'merge':
         return `<circle cx="${x}" cy="${y}" r="3.5" fill="${color}" stroke="none"/>`;
       default:

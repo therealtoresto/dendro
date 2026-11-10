@@ -87,6 +87,7 @@ export class DetailsPanel {
     laneColor: string,
     dates: DateFormatter,
     avatar: string | undefined,
+    incomingFrom: string | null,
   ): void {
     this.element.classList.remove('details-loading');
     const keepFilter = this.shown.kind === 'commit';
@@ -139,6 +140,7 @@ export class DetailsPanel {
           ${body ? `<pre class="details-body">${Format.escapeHtml(body)}</pre>` : ''}
         </div>
         ${details.parents.length > 1 ? '<div class="details-note">Merge commit: changes are shown against the first parent.</div>' : ''}
+        ${incomingFrom ? `<div class="details-note details-incoming">↓ This commit is on ${Format.escapeHtml(incomingFrom)} and not pulled yet.</div>` : ''}
         <div class="files-section">
           <div class="files-header">
             <span>Files changed</span><span class="files-count">${details.files.length}</span>
