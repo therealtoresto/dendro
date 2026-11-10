@@ -1,0 +1,356 @@
+:root {
+  --fh-surface: var(--vscode-editor-background);
+  --fh-ink: var(--vscode-foreground);
+  --fh-muted: var(--vscode-descriptionForeground);
+  --fh-grid: color-mix(in srgb, var(--fh-ink) 9%, transparent);
+  --fh-axis: color-mix(in srgb, var(--fh-ink) 30%, transparent);
+  --fh-border: var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  /* Validated pair (blue / red) for the dark surface. */
+  --fh-added: #3987e5;
+  --fh-deleted: #e66767;
+}
+
+/* The same two hues, stepped for a light surface. */
+body.vscode-light {
+  --fh-added: #2a78d6;
+  --fh-deleted: #e34948;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--fh-surface);
+  color: var(--fh-ink);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+#app {
+  padding: 18px 22px 28px;
+}
+
+.fh-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fh-name {
+  font-size: 1.3em;
+  font-weight: 600;
+}
+
+.fh-path {
+  color: var(--fh-muted);
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}
+
+.fh-summary {
+  margin-top: 4px;
+  color: var(--fh-muted);
+}
+
+.fh-controls {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0 14px;
+  flex-wrap: wrap;
+}
+
+.fh-segmented {
+  display: inline-flex;
+  border: 1px solid var(--vscode-input-border, var(--fh-border));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fh-segmented button {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--fh-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.fh-segmented button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(128, 128, 128, 0.15));
+}
+
+.fh-segmented button.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.fh-chart {
+  outline: none;
+}
+
+.fh-chart.fh-loading {
+  opacity: 0.5;
+}
+
+.fh-plot {
+  position: relative;
+}
+
+.fh-plot svg {
+  display: block;
+  overflow: visible;
+}
+
+.fh-lane-label {
+  position: absolute;
+  left: 0;
+  width: 182px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+
+.fh-avatar {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.fh-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fh-lane-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fh-lane-count {
+  color: var(--fh-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-grid {
+  stroke: var(--fh-grid);
+  stroke-width: 1;
+}
+
+.fh-lane-rule {
+  stroke: var(--fh-grid);
+  stroke-width: 1;
+}
+
+.fh-baseline {
+  stroke: var(--fh-axis);
+  stroke-width: 1;
+}
+
+.fh-axis-label {
+  fill: var(--fh-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-section-label {
+  fill: var(--fh-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fh-dot {
+  fill: var(--fh-added);
+  fill-opacity: 0.85;
+  stroke: var(--fh-surface);
+  stroke-width: 2;
+}
+
+.fh-bar.fh-added {
+  fill: var(--fh-added);
+}
+
+.fh-bar.fh-deleted {
+  fill: var(--fh-deleted);
+}
+
+/* While a commit is pointed at, it stays full strength and the rest step back. */
+svg.fh-has-hover .fh-dot:not(.fh-active),
+svg.fh-has-hover .fh-bar:not(.fh-active) {
+  opacity: 0.35;
+}
+
+.fh-dot.fh-active {
+  fill-opacity: 1;
+  stroke: var(--fh-ink);
+}
+
+.fh-crosshair {
+  stroke: var(--fh-ink);
+  stroke-width: 1;
+  stroke-opacity: 0.5;
+  pointer-events: none;
+}
+
+.fh-plot svg {
+  cursor: crosshair;
+}
+
+.fh-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  margin-left: 190px;
+  color: var(--fh-muted);
+  font-size: 0.92em;
+}
+
+.fh-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fh-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.fh-key-dot {
+  border-radius: 50%;
+  background: var(--fh-added);
+}
+
+.fh-key-added {
+  background: var(--fh-added);
+}
+
+.fh-key-deleted {
+  background: var(--fh-deleted);
+}
+
+.fh-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 380px;
+  padding: 10px 12px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--fh-border));
+  border-radius: 6px;
+  background: var(--vscode-editorHoverWidget-background, var(--fh-surface));
+  color: var(--vscode-editorHoverWidget-foreground, var(--fh-ink));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.fh-tip-values {
+  display: flex;
+  gap: 14px;
+  font-size: 1.1em;
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-tip-values span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fh-tip-values .fh-key {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.fh-tip-subject {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.fh-tip-meta,
+.fh-tip-hint {
+  margin-top: 3px;
+  color: var(--fh-muted);
+  font-size: 0.92em;
+}
+
+.fh-empty {
+  padding: 30px 0;
+  color: var(--fh-muted);
+}
+
+.fh-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fh-table th,
+.fh-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--fh-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fh-table td:last-child {
+  white-space: normal;
+}
+
+.fh-table th {
+  color: var(--fh-muted);
+  font-size: 0.85em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fh-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-table tbody tr {
+  cursor: pointer;
+}
+
+.fh-table tbody tr:hover {
+  background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.12));
+}
+
+.fh-cut {
+  stroke: var(--fh-surface);
+  stroke-width: 2.5;
+}
+
+.fh-outlier-label {
+  fill: var(--fh-ink);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fh-key-cut {
+  background: linear-gradient(160deg, var(--fh-added) 42%, var(--fh-surface) 42% 58%, var(--fh-added) 58%);
+}

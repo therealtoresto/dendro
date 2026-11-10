@@ -174,6 +174,12 @@ export class GitService {
     return GitOutputParser.parseHistory(await this.run(args));
   }
 
+  // The same history with the lines each commit added and deleted in the file.
+  async getFileHistoryStats(filePath: string, limit: number): Promise<HistoryEntry[]> {
+    const args = ['log', '--follow', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`, '--numstat', '-z', '--', filePath];
+    return GitOutputParser.parseHistoryStats(await this.run(args));
+  }
+
   // Commits that changed these lines (1-based, inclusive), as git traces the lines back.
   async getLineHistory(filePath: string, startLine: number, endLine: number, limit: number): Promise<HistoryEntry[]> {
     const args = ['log', `-L${startLine},${endLine}:${filePath}`, '-s', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`];

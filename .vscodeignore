@@ -6,4 +6,6 @@
 !dist/webview.css
 !dist/settings.js
 !dist/settings.css
+!dist/history.js
+!dist/history.css
 !media/**

@@ -121,3 +121,23 @@ describe('GitOutputParser history', () => {
     assert.equal(entry.path, undefined);
   });
 });
+
+describe('GitOutputParser history with line counts', () => {
+  it('reads the added and deleted lines of the file in each commit, across a rename', () => {
+    const output =
+      R + ['h2', 'h1', 'Ann Lee', 'ann@x.io', '1700000200', 'Move it'].join(F) + '\0\n1\t1\t\0src/old.ts\0src/new.ts\0' +
+      R + ['h1', '', 'Bob', 'bob@x.io', '1700000100', 'Start'].join(F) + '\0\n56\t9\tsrc/old.ts\0' +
+      R + ['h0', '', 'Bob', 'bob@x.io', '1700000000', 'Logo'].join(F) + '\0\n-\t-\tsrc/logo.png\0';
+
+    const history = GitOutputParser.parseHistoryStats(output);
+
+    assert.deepEqual(
+      history.map((entry) => [entry.hash, entry.additions, entry.deletions, entry.path, entry.oldPath]),
+      [
+        ['h2', 1, 1, 'src/new.ts', 'src/old.ts'],
+        ['h1', 56, 9, 'src/old.ts', undefined],
+        ['h0', 0, 0, 'src/logo.png', undefined],
+      ],
+    );
+  });
+});

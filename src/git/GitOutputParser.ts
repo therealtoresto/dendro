@@ -14,6 +14,8 @@ export interface HistoryEntry {
   subject: string;
   path?: string;
   oldPath?: string;
+  additions?: number;
+  deletions?: number;
 }
 
 interface LineStats {
@@ -74,6 +76,39 @@ export class GitOutputParser {
         const parts = change.split('\t');
         entry.path = parts[parts.length - 1];
         entry.oldPath = parts.length > 2 ? parts[1] : undefined;
+      }
+      entries.push(entry);
+    }
+
+    return entries;
+  }
+
+  // The same history with `--numstat -z`: after each header a NUL, then "12<tab>3<tab>path" or, for a rename,
+  // "12<tab>3<tab>" followed by the old and the new path, each ended by a NUL.
+  static parseHistoryStats(output: string): HistoryEntry[] {
+    const entries: HistoryEntry[] = [];
+
+    for (const record of output.split(RECORD_SEPARATOR)) {
+      const headerEnd = record.indexOf('\0');
+      const header = headerEnd < 0 ? record : record.slice(0, headerEnd);
+      if (!header.trim()) {
+        continue;
+      }
+
+      const [hash, parents, author, email, date, subject] = header.split(FIELD_SEPARATOR);
+      const entry: HistoryEntry = { hash, parents: parents ? parents.split(' ') : [], author, email, date: Number(date), subject };
+
+      const tokens = headerEnd < 0 ? [] : record.slice(headerEnd + 1).replace(/^\n/, '').split('\0');
+      const [additions, deletions, inlinePath] = (tokens[0] ?? '').split('\t');
+      if (additions !== undefined && deletions !== undefined) {
+        entry.additions = additions === '-' ? 0 : Number(additions);
+        entry.deletions = deletions === '-' ? 0 : Number(deletions);
+        if (inlinePath) {
+          entry.path = inlinePath;
+        } else {
+          entry.oldPath = tokens[1];
+          entry.path = tokens[2];
+        }
       }
       entries.push(entry);
     }

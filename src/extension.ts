@@ -11,6 +11,7 @@ import { LineBlame } from './editor/LineBlame';
 import type { GitExtension } from './git/git';
 import { CommitAction, GraphController, MenuContext } from './GraphController';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
+import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
 import { RevisionContentProvider, REVISION_SCHEME } from './RevisionContentProvider';
 import { Settings } from './Settings';
@@ -118,6 +119,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       },
     ),
     vscode.commands.registerCommand('dendro.clearFileAnnotations', () => annotations.clearAll()),
+    vscode.commands.registerCommand('dendro.showFileHistoryChart', (uri?: vscode.Uri) =>
+      FileHistoryChart.show(context, blame, uri),
+    ),
     vscode.commands.registerCommand('dendro.checkoutRef', (menu: MenuContext) =>
       GraphController.findByViewId(menu?.webview)?.runRefAction('checkout', menu),
     ),

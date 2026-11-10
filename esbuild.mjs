@@ -24,6 +24,15 @@ const builds = [
     sourcemap: true,
   },
   {
+    entryPoints: ['history/main.ts'],
+    outfile: 'dist/history.js',
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    target: 'es2022',
+    sourcemap: true,
+  },
+  {
     entryPoints: ['settings/main.ts'],
     outfile: 'dist/settings.js',
     bundle: true,
@@ -38,6 +47,7 @@ const copyStyles = () =>
   Promise.all([
     copyFile('webview/styles.css', 'dist/webview.css'),
     copyFile('settings/styles.css', 'dist/settings.css'),
+    copyFile('history/styles.css', 'dist/history.css'),
   ]);
 
 if (watch) {

@@ -189,6 +189,12 @@
         "command": "dendro.history.loadMore",
         "title": "Load More",
         "category": "Dendro"
+      },
+      {
+        "command": "dendro.showFileHistoryChart",
+        "title": "Show Visual File History",
+        "category": "Dendro",
+        "icon": "$(graph-line)"
       }
     ],
     "menus": {
@@ -285,6 +291,10 @@
         {
           "command": "dendro.showLineHistory",
           "group": "0_history@2"
+        },
+        {
+          "command": "dendro.showFileHistoryChart",
+          "group": "0_history@3"
         }
       ],
       "view/title": [
@@ -297,6 +307,11 @@
           "command": "dendro.history.refresh",
           "group": "navigation",
           "when": "view == dendro.fileHistory || view == dendro.lineHistory"
+        },
+        {
+          "command": "dendro.showFileHistoryChart",
+          "group": "navigation@1",
+          "when": "view == dendro.fileHistory"
         }
       ],
       "commandPalette": [
@@ -403,6 +418,13 @@
           "command": "dendro.history.copySha",
           "group": "3_copy@1",
           "when": "viewItem == dendro.historyCommit"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "dendro.showFileHistoryChart",
+          "group": "7_dendro",
+          "when": "!explorerResourceIsFolder && resourceScheme == file"
         }
       ]
     },
@@ -1165,7 +1187,7 @@
   "scripts": {
     "build": "npm run sync-config && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history",
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --skip-license -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",
