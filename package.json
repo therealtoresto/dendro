@@ -1,0 +1,979 @@
+{
+  "name": "dendro",
+  "displayName": "Dendro",
+  "description": "Reads your git tree like tree rings: commit graph, pull / push, the changes and files of every commit.",
+  "version": "0.4.1",
+  "publisher": "tarasbondaruk",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Visualization"
+  ],
+  "keywords": [
+    "git",
+    "graph",
+    "history",
+    "log",
+    "commits"
+  ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onWebviewPanel:dendro.graph",
+    "onWebviewPanel:dendro.settings"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "dendro.show",
+        "title": "Show Commit Graph",
+        "category": "Dendro",
+        "icon": {
+          "light": "media/dendro-light.svg",
+          "dark": "media/dendro-dark.svg"
+        }
+      },
+      {
+        "command": "dendro.showSettings",
+        "title": "Open Settings",
+        "category": "Dendro",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "dendro.connectGitLabAvatars",
+        "title": "Connect GitLab for Avatars",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.refresh",
+        "title": "Refresh Commit Graph",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.toggleFileBlame",
+        "title": "Toggle File Blame",
+        "category": "Dendro",
+        "icon": "$(person)"
+      },
+      {
+        "command": "dendro.toggleFileHeatmap",
+        "title": "Toggle File Heatmap",
+        "category": "Dendro",
+        "icon": "$(flame)"
+      },
+      {
+        "command": "dendro.toggleFileChanges",
+        "title": "Toggle File Changes",
+        "category": "Dendro",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "dendro.clearFileAnnotations",
+        "title": "Clear File Annotations",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.showCommit",
+        "title": "Show Commit in Graph",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.openLineChanges",
+        "title": "Open Line Changes",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.copyText",
+        "title": "Copy",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.statusBarAction",
+        "title": "Status Bar Blame Action",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.copySha",
+        "title": "Copy Commit SHA",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.copyMessage",
+        "title": "Copy Commit Message",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.checkoutCommit",
+        "title": "Checkout This Commit (Detached)",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.createBranch",
+        "title": "Create Branch Here\u2026",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.cherryPick",
+        "title": "Cherry-pick Commit",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.revert",
+        "title": "Revert Commit",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.reset",
+        "title": "Reset Current Branch to This Commit\u2026",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.checkoutRef",
+        "title": "Checkout",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.copyRefName",
+        "title": "Copy Name",
+        "category": "Dendro"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "dendro.show",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "webview/context": [
+        {
+          "command": "dendro.copySha",
+          "group": "1_copy@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.copyMessage",
+          "group": "1_copy@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.checkoutCommit",
+          "group": "2_branch@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.createBranch",
+          "group": "2_branch@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.cherryPick",
+          "group": "3_apply@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.revert",
+          "group": "3_apply@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.reset",
+          "group": "3_apply@3",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.checkoutRef",
+          "group": "1_ref@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref'"
+        },
+        {
+          "command": "dendro.copyRefName",
+          "group": "1_ref@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref'"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "dendro.toggleFileBlame",
+          "group": "navigation@100",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "dendro.annotations",
+          "group": "9_dendro",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "dendro.annotations": [
+        {
+          "command": "dendro.toggleFileBlame",
+          "group": "1@1"
+        },
+        {
+          "command": "dendro.toggleFileHeatmap",
+          "group": "1@2"
+        },
+        {
+          "command": "dendro.toggleFileChanges",
+          "group": "1@3"
+        },
+        {
+          "command": "dendro.clearFileAnnotations",
+          "group": "2@1",
+          "when": "dendro.annotations"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "dendro.showSettings",
+          "group": "navigation",
+          "when": "view == dendro.graphView"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "dendro.showCommit",
+          "when": "false"
+        },
+        {
+          "command": "dendro.openLineChanges",
+          "when": "false"
+        },
+        {
+          "command": "dendro.copyText",
+          "when": "false"
+        },
+        {
+          "command": "dendro.statusBarAction",
+          "when": "false"
+        },
+        {
+          "command": "dendro.copySha",
+          "when": "false"
+        },
+        {
+          "command": "dendro.copyMessage",
+          "when": "false"
+        },
+        {
+          "command": "dendro.checkoutCommit",
+          "when": "false"
+        },
+        {
+          "command": "dendro.createBranch",
+          "when": "false"
+        },
+        {
+          "command": "dendro.cherryPick",
+          "when": "false"
+        },
+        {
+          "command": "dendro.revert",
+          "when": "false"
+        },
+        {
+          "command": "dendro.reset",
+          "when": "false"
+        },
+        {
+          "command": "dendro.checkoutRef",
+          "when": "false"
+        },
+        {
+          "command": "dendro.copyRefName",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "Dendro: Commit Graph",
+        "properties": {
+          "dendro.graph.location": {
+            "description": "Open the Commit Graph. The bottom panel keeps the graph next to the terminal while you edit.",
+            "default": "editor",
+            "type": "string",
+            "enum": [
+              "editor",
+              "panel"
+            ],
+            "enumDescriptions": [
+              "as an editor tab",
+              "in the bottom panel"
+            ]
+          },
+          "dendro.graph.initialRows": {
+            "description": "Commits loaded when the graph opens",
+            "default": 500,
+            "type": "number",
+            "minimum": 50,
+            "maximum": 10000
+          },
+          "dendro.graph.pageRows": {
+            "description": "Commits added each time you scroll to the end",
+            "default": 500,
+            "type": "number",
+            "minimum": 50,
+            "maximum": 10000
+          },
+          "dendro.graph.scrollAheadRows": {
+            "description": "Start loading more this many rows before the end",
+            "default": 60,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "dendro.graph.searchLimit": {
+            "description": "Most results per search",
+            "default": 2000,
+            "type": "number",
+            "minimum": 50,
+            "maximum": 20000
+          },
+          "dendro.graph.showBranches": {
+            "description": "Branches in the graph",
+            "default": "all",
+            "type": "string",
+            "enum": [
+              "all",
+              "smart",
+              "current"
+            ],
+            "enumDescriptions": [
+              "every branch (default)",
+              "the current branch, its upstream and the default branch",
+              "only the current branch"
+            ]
+          },
+          "dendro.graph.showRemoteBranches": {
+            "description": "Include remote branches",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.showTags": {
+            "description": "Include tags",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.order": {
+            "description": "Commit order",
+            "default": "date",
+            "type": "string",
+            "enum": [
+              "date",
+              "author-date",
+              "topo"
+            ],
+            "enumDescriptions": [
+              "newest commit date first (default)",
+              "newest author date first",
+              "each branch kept together"
+            ]
+          },
+          "dendro.graph.columns": {
+            "description": "Columns",
+            "default": [
+              "refs",
+              "graph",
+              "author",
+              "changes",
+              "date",
+              "sha"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "refs",
+                "graph",
+                "author",
+                "changes",
+                "date",
+                "sha"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.graph.dimMergeCommits": {
+            "description": "Fade merge commits",
+            "default": false,
+            "type": "boolean"
+          },
+          "dendro.graph.pillLayout": {
+            "description": "Where branch and tag badges go",
+            "default": "column",
+            "type": "string",
+            "enum": [
+              "column",
+              "inline"
+            ],
+            "enumDescriptions": [
+              "their own column (default)",
+              "before the commit message"
+            ]
+          },
+          "dendro.graph.pillsPerRow": {
+            "description": "Badges per row before the rest fold into \"+N\"",
+            "default": 2,
+            "type": "number",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              6
+            ]
+          },
+          "dendro.graph.showRemoteNames": {
+            "description": "Name the remote on remote branch badges",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.showUpstreamStatus": {
+            "description": "Show ahead / behind counts on branches that track a remote",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.avatars": {
+            "description": "Show author pictures (otherwise names)",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.rowHover.enabled": {
+            "description": "Open a commit card when the pointer rests on a row. Author with picture, date, files added / modified / deleted, changed lines and the full message.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.rowHover.delayMs": {
+            "description": "Wait before opening it (ms)",
+            "default": 400,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3000
+          },
+          "dendro.graph.multiSelect": {
+            "description": "Compare two commits with Cmd/Ctrl+click",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.scrollMarkers.enabled": {
+            "description": "Mark commits on the scrollbar",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.scrollMarkers.kinds": {
+            "description": "Scrollbar marks. The selected commit and search results are always marked.",
+            "default": [
+              "head",
+              "localBranches",
+              "workingTree"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "head",
+                "localBranches",
+                "remoteBranches",
+                "tags",
+                "workingTree"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.graph.minimap.enabled": {
+            "description": "Show daily commit activity above the graph",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.minimap.kinds": {
+            "description": "Activity strip marks",
+            "default": [
+              "head",
+              "localBranches",
+              "tags"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "head",
+                "localBranches",
+                "remoteBranches",
+                "tags",
+                "workingTree"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.graph.maxGraphWidth": {
+            "description": "Widest the graph column grows on its own (px). A width you set by dragging the column border wins over this.",
+            "default": 220,
+            "type": "number",
+            "minimum": 60,
+            "maximum": 800
+          },
+          "dendro.graph.diffLocation": {
+            "description": "Open file diffs",
+            "default": "beside",
+            "type": "string",
+            "enum": [
+              "beside",
+              "active"
+            ],
+            "enumDescriptions": [
+              "beside the graph",
+              "in place of the graph"
+            ]
+          },
+          "dendro.graph.fetchPrune": {
+            "description": "Remove remote branches that no longer exist when fetching",
+            "default": true,
+            "type": "boolean"
+          }
+        }
+      },
+      {
+        "title": "Dendro: Inline Blame",
+        "properties": {
+          "dendro.inlineBlame.enabled": {
+            "description": "Show blame after the current line",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.inlineBlame.format": {
+            "description": "Text. Tokens: ${author} ${email} ${ago} ${date} ${agoOrDate} ${message} ${sha}. ${message|50} cuts a value to 50 characters, ${ago|14-} pads it to 14.",
+            "default": "${author}, ${agoOrDate} \u2022 ${message|50}",
+            "type": "string"
+          }
+        }
+      },
+      {
+        "title": "Dendro: Status Bar Blame",
+        "properties": {
+          "dendro.statusBar.enabled": {
+            "description": "Show blame in the status bar",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.statusBar.format": {
+            "description": "Text",
+            "default": "${author}, ${agoOrDate}",
+            "type": "string"
+          },
+          "dendro.statusBar.alignment": {
+            "description": "Position",
+            "default": "right",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "enumDescriptions": [
+              "left",
+              "right"
+            ]
+          },
+          "dendro.statusBar.command": {
+            "description": "When clicked",
+            "default": "showInGraph",
+            "type": "string",
+            "enum": [
+              "showInGraph",
+              "openChanges",
+              "copySha"
+            ],
+            "enumDescriptions": [
+              "show the commit in the Commit Graph",
+              "open the line's changes (diff)",
+              "copy the commit SHA"
+            ]
+          }
+        }
+      },
+      {
+        "title": "Dendro: Hovers",
+        "properties": {
+          "dendro.hovers.enabled": {
+            "description": "Show blame cards on hover",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.hovers.currentLine.enabled": {
+            "description": "Card for the current line",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.hovers.currentLine.over": {
+            "description": "Shown when over the",
+            "default": "annotation",
+            "type": "string",
+            "enum": [
+              "annotation",
+              "line"
+            ],
+            "enumDescriptions": [
+              "the blame text only",
+              "anywhere on the line"
+            ]
+          },
+          "dendro.hovers.annotations.enabled": {
+            "description": "Cards while a file is annotated (blame, heatmap, changes)",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.hovers.annotations.over": {
+            "description": "Shown when over the",
+            "default": "line",
+            "type": "string",
+            "enum": [
+              "annotation",
+              "line"
+            ],
+            "enumDescriptions": [
+              "the blame text only",
+              "anywhere on the line"
+            ]
+          },
+          "dendro.hovers.details": {
+            "description": "Include author, date, message and links",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.hovers.changes": {
+            "description": "Include the diff of the line",
+            "default": true,
+            "type": "boolean"
+          }
+        }
+      },
+      {
+        "title": "Dendro: File Blame",
+        "properties": {
+          "dendro.blame.toggleMode": {
+            "description": "Switch annotations on and off",
+            "default": "file",
+            "type": "string",
+            "enum": [
+              "file",
+              "window"
+            ],
+            "enumDescriptions": [
+              "per file",
+              "for every file at once"
+            ]
+          },
+          "dendro.blame.format": {
+            "description": "Text",
+            "default": "${message|40} ${agoOrDate|14-}",
+            "type": "string"
+          },
+          "dendro.blame.heatmap": {
+            "description": "Color a bar by how old each line is. Recent lines get the hot color, older ones the cold color; within each, the newer the line, the brighter the bar.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.blame.heatmapPosition": {
+            "description": "Bar side",
+            "default": "right",
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "enumDescriptions": [
+              "left",
+              "right"
+            ]
+          },
+          "dendro.blame.avatars": {
+            "description": "Show author pictures",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.blame.compact": {
+            "description": "Write the blame once for consecutive lines of one commit",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.blame.highlight.enabled": {
+            "description": "Mark the other lines of the commit under the cursor",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.blame.highlight.locations": {
+            "description": "Mark them in",
+            "default": [
+              "gutter",
+              "line",
+              "overview"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gutter",
+                "line",
+                "overview"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.blame.dirtyDelayMs": {
+            "description": "Wait after typing before blaming an unsaved file again (ms). Also applies to inline blame and the status bar.",
+            "default": 2500,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 60000
+          },
+          "dendro.blame.dirtyMaxLines": {
+            "description": "Blame unsaved files longer than this many lines only on save",
+            "default": 5000,
+            "type": "number",
+            "minimum": 100,
+            "maximum": 1000000
+          }
+        }
+      },
+      {
+        "title": "Dendro: File Changes",
+        "properties": {
+          "dendro.changes.toggleMode": {
+            "description": "Switch annotations on and off",
+            "default": "file",
+            "type": "string",
+            "enum": [
+              "file",
+              "window"
+            ],
+            "enumDescriptions": [
+              "per file",
+              "for every file at once"
+            ]
+          },
+          "dendro.changes.locations": {
+            "description": "Mark them in. When there are none, the lines of the last commit that touched the file are marked.",
+            "default": [
+              "gutter",
+              "line",
+              "overview"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gutter",
+                "line",
+                "overview"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      {
+        "title": "Dendro: File Heatmap",
+        "properties": {
+          "dendro.heatmap.toggleMode": {
+            "description": "Switch annotations on and off",
+            "default": "file",
+            "type": "string",
+            "enum": [
+              "file",
+              "window"
+            ],
+            "enumDescriptions": [
+              "per file",
+              "for every file at once"
+            ]
+          },
+          "dendro.heatmap.locations": {
+            "description": "Show it in",
+            "default": [
+              "gutter",
+              "overview"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "gutter",
+                "line",
+                "overview"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.heatmap.fadeLines": {
+            "description": "Dim lines older than the threshold",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.heatmap.coldThresholdDays": {
+            "description": "Lines older than this many days count as old",
+            "default": 90,
+            "type": "number",
+            "minimum": 1,
+            "maximum": 3650
+          },
+          "dendro.heatmap.hotColor": {
+            "description": "Color of recent lines",
+            "default": "#f66a0a",
+            "type": "string",
+            "format": "color-hex"
+          },
+          "dendro.heatmap.coldColor": {
+            "description": "Color of old lines",
+            "default": "#0a60f6",
+            "type": "string",
+            "format": "color-hex"
+          }
+        }
+      },
+      {
+        "title": "Dendro: Avatars",
+        "properties": {
+          "dendro.avatars.pictures": {
+            "description": "Show account pictures of commit authors. An author without a picture is shown by initials. Pictures are cached for a week.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.avatars.sources": {
+            "description": "Look for pictures on",
+            "default": [
+              "github",
+              "gitlab",
+              "gravatar"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "github",
+                "gitlab",
+                "gravatar"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.avatars.fallback": {
+            "description": "Authors with no picture get. The generated pictures come from Gravatar, so they need Gravatar in the list above.",
+            "default": "initials",
+            "type": "string",
+            "enum": [
+              "initials",
+              "identicon",
+              "retro",
+              "robohash",
+              "monsterid",
+              "wavatar"
+            ],
+            "enumDescriptions": [
+              "their initials (default)",
+              "a geometric pattern (Gravatar identicon)",
+              "an 8-bit face (Gravatar retro)",
+              "a robot (Gravatar robohash)",
+              "a monster (Gravatar monsterid)",
+              "a face (Gravatar wavatar)"
+            ]
+          }
+        }
+      },
+      {
+        "title": "Dendro: Dates & Times",
+        "properties": {
+          "dendro.dates.relative": {
+            "description": "Write recent dates relatively. For example \"3 days ago\" instead of a date.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.dates.locale": {
+            "description": "Language of dates. A language tag such as en-US or uk-UA.",
+            "default": "",
+            "type": "string"
+          },
+          "dendro.dates.format": {
+            "description": "Full date. Tokens: YYYY YY MMMM MMM MM M Do DD D dddd ddd HH H hh h mm ss A a. Text in [brackets] stays as written.",
+            "default": "MMMM Do, YYYY h:mma",
+            "type": "string"
+          },
+          "dendro.dates.shortFormat": {
+            "description": "Short date",
+            "default": "",
+            "type": "string"
+          },
+          "dendro.dates.timeFormat": {
+            "description": "Time",
+            "default": "",
+            "type": "string"
+          },
+          "dendro.dates.source": {
+            "description": "Date of a commit",
+            "default": "authored",
+            "type": "string",
+            "enum": [
+              "authored",
+              "committed"
+            ],
+            "enumDescriptions": [
+              "when it was written \u2014 author date (default)",
+              "when it was committed \u2014 committer date"
+            ]
+          }
+        }
+      }
+    ],
+    "submenus": [
+      {
+        "id": "dendro.annotations",
+        "label": "Dendro Annotations"
+      }
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "dendro-panel",
+          "title": "Dendro",
+          "icon": "media/dendro-dark.svg"
+        }
+      ]
+    },
+    "views": {
+      "dendro-panel": [
+        {
+          "type": "webview",
+          "id": "dendro.graphView",
+          "name": "Commit Graph",
+          "when": "config.dendro.graph.location == 'panel'"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "npm run sync-config && node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings",
+    "test": "node --import tsx --test test/*.test.ts",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository --skip-license -o dendro.vsix",
+    "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",
+    "sync-config": "tsx scripts/syncConfig.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

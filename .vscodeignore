@@ -1,0 +1,9 @@
+**
+!package.json
+!README.md
+!dist/extension.js
+!dist/webview.js
+!dist/webview.css
+!dist/settings.js
+!dist/settings.css
+!media/**
