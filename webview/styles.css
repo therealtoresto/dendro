@@ -1721,3 +1721,7 @@ body.details-hidden .tool-details {
 .list-rows.long-dates .date-long {
   display: inline;
 }
+
+.badge-more-tags {
+  border-left-color: color-mix(in srgb, currentColor 35%, transparent);
+}

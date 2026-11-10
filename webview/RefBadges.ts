@@ -6,6 +6,8 @@ export interface Badge {
   ref: RefInfo;
   remotes: string[];
   isCurrent: boolean;
+  // Other tags on the same commit, folded into this tag's badge as "+N".
+  moreTags?: string[];
 }
 
 export interface BadgeOptions {
@@ -54,8 +56,9 @@ export class RefBadges {
     return badges;
   }
 
+  // A row has room for little, so a commit's tags share one badge: the first tag and "+N" for the rest.
   static render(refs: RefInfo[], headBranch: string | null, color: string, options: BadgeOptions): string {
-    const badges = RefBadges.groupRefs(refs, headBranch);
+    const badges = RefBadges.foldTags(RefBadges.groupRefs(refs, headBranch));
     if (badges.length === 0) {
       return '';
     }
@@ -68,6 +71,15 @@ export class RefBadges {
     }
 
     return visible.join('');
+  }
+
+  private static foldTags(badges: Badge[]): Badge[] {
+    const tags = badges.filter((badge) => badge.ref.kind === 'tag');
+    if (tags.length < 2) {
+      return badges;
+    }
+    const first: Badge = { ...tags[0], moreTags: tags.slice(1).map((badge) => badge.ref.name) };
+    return badges.filter((badge) => badge.ref.kind !== 'tag' || badge === tags[0]).map((badge) => (badge === tags[0] ? first : badge));
   }
 
   static renderAll(refs: RefInfo[], headBranch: string | null, color: string): string {
@@ -110,6 +122,11 @@ export class RefBadges {
       remoteMark = `<span class="badge-origin">${Icons.render('cloud', 11)}${names}</span>`;
     }
 
+    let moreTagsMark = '';
+    if (badge.moreTags?.length) {
+      moreTagsMark = `<span class="badge-origin badge-more-tags">${Icons.render('tag', 11)}+${badge.moreTags.length}</span>`;
+    }
+
     let upstreamMark = '';
     if (options.showUpstreamStatus && ref.upstream && (ref.ahead || ref.behind)) {
       const ahead = ref.ahead ? `<span title="${ref.ahead} to push">↑${ref.ahead}</span>` : '';
@@ -117,7 +134,7 @@ export class RefBadges {
       upstreamMark = `<span class="badge-upstream">${ahead}${behind}</span>`;
     }
 
-    const tooltipLines = [ref.name, ...badge.remotes.map((remote) => `${remote}/${ref.name}`)];
+    const tooltipLines = [ref.name, ...badge.remotes.map((remote) => `${remote}/${ref.name}`), ...(badge.moreTags ?? [])];
     if (ref.upstream) {
       tooltipLines.push(`tracks ${ref.upstream}: ${ref.ahead ?? 0} ahead, ${ref.behind ?? 0} behind`);
     }
@@ -131,7 +148,7 @@ export class RefBadges {
     return (
       `<span class="${classes}"${draggable} style="--lane:${color}" data-ref-name="${Format.escapeHtml(ref.name)}" ` +
       `data-ref-kind="${ref.kind}" data-vscode-context="${context}" title="${Format.escapeHtml(tooltipLines.join('\n'))}">` +
-      `${icon}<span class="badge-name">${Format.escapeHtml(label)}</span>${remoteMark}${upstreamMark}</span>`
+      `${icon}<span class="badge-name">${Format.escapeHtml(label)}</span>${remoteMark}${moreTagsMark}${upstreamMark}</span>`
     );
   }
 }
