@@ -21,6 +21,11 @@ const PATHS = {
   gear:
     '<circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
   compare: '<circle cx="4.5" cy="4" r="1.5"/><circle cx="11.5" cy="12" r="1.5"/><path d="M4.5 5.5v7h5M11.5 10.5v-7h-5"/>',
+  folder: '<path d="M1.5 4.5a1 1 0 0 1 1-1H6l1.5 1.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/>',
+  folderOpen: '<path d="M1.5 12V4.5a1 1 0 0 1 1-1H6l1.5 1.5h5a1 1 0 0 1 1 1v1.5"/><path d="M1.5 12l2-5h11l-2 5z"/>',
+  list: '<path d="M5.5 4h8.5M5.5 8h8.5M5.5 12h8.5M2.5 4h.01M2.5 8h.01M2.5 12h.01"/>',
+  tree: '<path d="M3 3h5M3 3v9h4M3 7.5h4M10 7.5h4M10 12h4"/>',
+  chevron: '<path d="M6 4l4 4-4 4"/>',
   rings:
     '<circle cx="8" cy="8" r="6.5"/><circle cx="8.2" cy="8" r="4.2"/><circle cx="8.3" cy="8" r="2"/>',
 } as const;

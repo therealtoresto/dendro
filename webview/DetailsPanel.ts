@@ -9,6 +9,8 @@ import type {
 } from '../src/protocol';
 import type { DateFormatter } from '../src/shared/DateFormatter';
 import { AvatarStyle } from '../src/shared/AvatarStyle';
+import { FileIcons } from './FileIcons';
+import { FileTree, TreeNode } from './FileTree';
 import { Format } from './Format';
 import { Icons } from './Icons';
 import { HostBridge } from './HostBridge';
@@ -30,6 +32,9 @@ type Shown =
   | { kind: 'working'; details: WorkingDetails }
   | { kind: 'comparison'; details: ComparisonDetails };
 
+// A long message folds to this many lines, so the changed files stay in view.
+const BODY_CLAMP_LINES = 9;
+
 const STATUS_NAMES: Record<string, string> = {
   A: 'Added',
   M: 'Modified',
@@ -45,6 +50,8 @@ export class DetailsPanel {
   private shown: Shown = { kind: 'none' };
   private entries: FileEntry[] = [];
   private filterText = '';
+  private fileView: 'list' | 'tree' = HostBridge.readViewState().fileView ?? 'list';
+  private readonly collapsedFolders = new Set<string>();
 
   constructor(
     private readonly element: HTMLElement,
@@ -109,8 +116,13 @@ export class DetailsPanel {
       .join(' ');
     const badges = RefBadges.renderAll(refs, headBranch, laneColor);
 
+    if (!keepFilter || this.shown.details.hash !== details.hash) {
+      this.collapsedFolders.clear();
+    }
+
     this.element.innerHTML = `
       <div class="details-scroll">
+        <div class="details-header">
         <div class="details-author">
           <span class="avatar avatar-large" style="background:${AvatarStyle.getColor(details.email)}">${Format.escapeHtml(AvatarStyle.getInitials(details.author))}${avatar ? `<img class="avatar-image" src="${avatar}" alt="">` : ''}</span>
           <div class="details-author-text">
@@ -133,11 +145,13 @@ export class DetailsPanel {
           </span>
         </div>
         ${parents ? `<div class="details-parents details-muted">${details.parents.length > 1 ? 'Parents' : 'Parent'}: ${parents}</div>` : ''}
+        </div>
         <div class="details-message">
           <div class="details-subject">${Format.escapeHtml(subject)}
             <button class="icon-button" data-action="copy" data-text="${Format.escapeHtml(details.message)}" title="Copy message">${Icons.render('copy', 12)}</button>
           </div>
-          ${body ? `<pre class="details-body">${Format.escapeHtml(body)}</pre>` : ''}
+          ${body ? `<pre class="details-body${body.split('\n').length > BODY_CLAMP_LINES ? ' clamped' : ''}">${Format.escapeHtml(body)}</pre>` : ''}
+          ${body.split('\n').length > BODY_CLAMP_LINES ? '<button class="link details-more" data-action="toggle-body">Show more</button>' : ''}
         </div>
         ${details.parents.length > 1 ? '<div class="details-note">Merge commit: changes are shown against the first parent.</div>' : ''}
         ${incomingFrom ? `<div class="details-note details-incoming">↓ This commit is on ${Format.escapeHtml(incomingFrom)} and not pulled yet.</div>` : ''}
@@ -145,6 +159,7 @@ export class DetailsPanel {
           <div class="files-header">
             <span>Files changed</span><span class="files-count">${details.files.length}</span>
             <span class="files-lines">${DetailsPanel.renderLineTotals(details.files)}</span>
+            ${this.renderViewSwitch()}
           </div>
           <input class="files-filter" type="text" placeholder="Filter files…" value="${Format.escapeHtml(this.filterText)}" spellcheck="false">
           <div class="files-list"></div>
@@ -181,6 +196,7 @@ export class DetailsPanel {
           <div class="files-header">
             <span>Files changed</span><span class="files-count">${details.files.length}</span>
             <span class="files-lines">${DetailsPanel.renderLineTotals(details.files)}</span>
+            ${this.renderViewSwitch()}
           </div>
           <input class="files-filter" type="text" placeholder="Filter files…" value="${Format.escapeHtml(this.filterText)}" spellcheck="false">
           <div class="files-list"></div>
@@ -210,11 +226,18 @@ export class DetailsPanel {
         </div>
         <div class="details-muted details-working-note">Uncommitted changes in the working tree. Stage and commit them from Source Control.</div>
         <div class="files-section">
+          <div class="files-header"><span>Files</span><span class="files-count">${this.entries.length}</span>${this.renderViewSwitch()}</div>
           <input class="files-filter" type="text" placeholder="Filter files…" value="${Format.escapeHtml(this.filterText)}" spellcheck="false">
           <div class="files-list"></div>
         </div>
       </div>`;
     this.renderFiles();
+  }
+
+  private renderViewSwitch(): string {
+    const button = (view: 'list' | 'tree', title: string) =>
+      `<button class="icon-button view-switch${this.fileView === view ? ' active' : ''}" data-action="view-${view}" title="${title}">${Icons.render(view, 13)}</button>`;
+    return `<span class="files-view">${button('list', 'Show as a list')}${button('tree', 'Show as folders')}</span>`;
   }
 
   private renderFiles(): void {
@@ -238,48 +261,71 @@ export class DetailsPanel {
     list.innerHTML = sections
       .map(({ title, staged }) => {
         const total = this.entries.filter((entry) => entry.staged === staged).length;
-        const rows = this.renderFileRows((entry) => entry.staged === staged && matches(entry));
+        const rows = this.renderFileRows((entry) => entry.staged === staged && matches(entry), title);
         return (
-          `<div class="files-header"><span>${title}</span><span class="files-count">${total}</span></div>` +
+          `<div class="files-subheader"><span>${title}</span><span class="files-count">${total}</span></div>` +
           (rows || `<div class="details-muted files-none">${total === 0 ? 'Nothing here.' : 'No files match.'}</div>`)
         );
       })
       .join('');
   }
 
-  private renderFileRows(include: (entry: FileEntry) => boolean): string {
+  private renderFileRows(include: (entry: FileEntry) => boolean, group = ''): string {
+    const included = this.entries
+      .map((entry, index) => ({ entry, index }))
+      .filter(({ entry }) => include(entry));
+
+    if (this.fileView === 'tree' && !this.filterText.trim()) {
+      const tree = FileTree.build(included.map(({ entry, index }) => ({ path: entry.file.path, index })));
+      return this.renderTree(tree, 0, group);
+    }
+    return included.map(({ index }) => this.renderFileRow(index, 0, true)).join('');
+  }
+
+  private renderTree(nodes: TreeNode[], depth: number, group: string): string {
     let html = '';
-
-    this.entries.forEach((entry, index) => {
-      if (!include(entry)) {
-        return;
+    for (const node of nodes) {
+      if (node.kind === 'file') {
+        html += this.renderFileRow(node.index, depth, false);
+        continue;
       }
-
-      const { file } = entry;
-      const { name, folder } = Format.splitPath(file.path);
-      const renamedFrom = file.oldPath ? `${file.oldPath} → ` : '';
-      const lines = file.binary
-        ? '<span class="details-muted">binary</span>'
-        : DetailsPanel.renderLineCounts(file.additions, file.deletions);
-      const atRevision =
-        (this.shown.kind === 'commit' || this.shown.kind === 'comparison') && file.status !== 'D'
-          ? `<button class="icon-button" data-action="open-revision" data-index="${index}" title="Open the file as of this commit">${Icons.render('history', 13)}</button>`
-          : '';
-
-      html += `
-        <div class="file-row" data-action="diff" data-index="${index}" title="${Format.escapeHtml(renamedFrom + file.path)}">
-          <span class="file-name">${Format.escapeHtml(name)}</span>
-          <span class="file-folder">${Format.escapeHtml(folder)}</span>
-          <span class="file-lines">${lines}</span>
-          <span class="file-actions">
-            ${atRevision}
-            <button class="icon-button" data-action="open-file" data-index="${index}" title="Open the working file">${Icons.render('file', 13)}</button>
-          </span>
-          <span class="file-status status-${file.status === '?' ? 'untracked' : file.status}" title="${STATUS_NAMES[file.status]}">${file.status === '?' ? 'U' : file.status}</span>
-        </div>`;
-    });
-
+      const key = `${group}/${node.path}`;
+      const open = !this.collapsedFolders.has(key);
+      html +=
+        `<div class="folder-row" data-action="toggle-folder" data-folder="${Format.escapeHtml(key)}" style="--depth:${depth}" title="${Format.escapeHtml(node.path)}">` +
+        `<span class="folder-chevron${open ? ' open' : ''}">${Icons.render('chevron', 12)}</span>${FileIcons.renderFolder(open)}` +
+        `<span class="folder-name">${Format.escapeHtml(node.name)}</span><span class="folder-count">${node.fileCount}</span></div>`;
+      if (open) {
+        html += this.renderTree(node.children, depth + 1, group);
+      }
+    }
     return html;
+  }
+
+  private renderFileRow(index: number, depth: number, withFolder: boolean): string {
+    const { file } = this.entries[index];
+    const { name, folder } = Format.splitPath(file.path);
+    const renamedFrom = file.oldPath ? `${file.oldPath} → ` : '';
+    const lines = file.binary
+      ? '<span class="details-muted">binary</span>'
+      : DetailsPanel.renderLineCounts(file.additions, file.deletions);
+    const atRevision =
+      (this.shown.kind === 'commit' || this.shown.kind === 'comparison') && file.status !== 'D'
+        ? `<button class="icon-button" data-action="open-revision" data-index="${index}" title="Open the file as of this commit">${Icons.render('history', 13)}</button>`
+        : '';
+
+    return `
+      <div class="file-row" data-action="diff" data-index="${index}" style="--depth:${depth}" title="${Format.escapeHtml(renamedFrom + file.path)}">
+        ${FileIcons.render(file.path)}
+        <span class="file-name">${Format.escapeHtml(name)}</span>
+        <span class="file-folder">${withFolder ? Format.escapeHtml(folder) : ''}</span>
+        <span class="file-lines">${lines}</span>
+        <span class="file-actions">
+          ${atRevision}
+          <button class="icon-button" data-action="open-file" data-index="${index}" title="Open the working file">${Icons.render('file', 13)}</button>
+        </span>
+        <span class="file-status status-${file.status === '?' ? 'untracked' : file.status}" title="${STATUS_NAMES[file.status]}">${file.status === '?' ? 'U' : file.status}</span>
+      </div>`;
   }
 
   private onClick(event: MouseEvent): void {
@@ -295,6 +341,31 @@ export class DetailsPanel {
     }
     if (action === 'select') {
       this.handlers.onSelectCommit(target.dataset.hash!);
+      return;
+    }
+    if (action === 'toggle-body') {
+      const body = this.element.querySelector('.details-body');
+      const clamped = body?.classList.toggle('clamped') ?? false;
+      target.textContent = clamped ? 'Show more' : 'Show less';
+      return;
+    }
+    if (action === 'view-list' || action === 'view-tree') {
+      this.fileView = action === 'view-list' ? 'list' : 'tree';
+      HostBridge.saveViewState({ fileView: this.fileView });
+      for (const button of this.element.querySelectorAll<HTMLElement>('.view-switch')) {
+        button.classList.toggle('active', button.dataset.action === action);
+      }
+      this.renderFiles();
+      return;
+    }
+    if (action === 'toggle-folder') {
+      const folder = target.dataset.folder!;
+      if (this.collapsedFolders.has(folder)) {
+        this.collapsedFolders.delete(folder);
+      } else {
+        this.collapsedFolders.add(folder);
+      }
+      this.renderFiles();
       return;
     }
 

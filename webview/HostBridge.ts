@@ -13,6 +13,7 @@ export interface SavedViewState {
   detailsWidth?: number;
   selectedKey?: string | null;
   columnWidths?: ColumnWidths;
+  fileView?: 'list' | 'tree';
 }
 
 export class HostBridge {

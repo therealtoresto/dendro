@@ -1438,3 +1438,141 @@ mark {
   outline: 2px dashed var(--lane);
   outline-offset: 1px;
 }
+
+/* Details: sticky header, message card, file kinds, folders */
+
+.details-scroll {
+  padding-top: 0;
+}
+
+.details-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -14px;
+  padding: 14px 14px 12px;
+  background: var(--side-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.details-message {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+}
+
+.files-header {
+  margin-top: 16px;
+}
+
+.files-view {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 6px;
+}
+
+.view-switch.active {
+  color: var(--fg);
+  background: var(--vscode-toolbar-hoverBackground, var(--hover));
+}
+
+.files-subheader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 4px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.file-row,
+.folder-row {
+  padding-left: calc(6px + var(--depth, 0) * 14px);
+}
+
+.file-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--file-color) 22%, transparent);
+  color: var(--file-color);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-family: var(--mono);
+}
+
+.file-icon-plain {
+  background: none;
+  color: var(--muted);
+}
+
+.folder-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding-right: 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.folder-row:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.folder-chevron {
+  display: inline-flex;
+  transition: transform 0.1s;
+}
+
+.folder-chevron.open {
+  transform: rotate(90deg);
+}
+
+.folder-icon {
+  display: inline-flex;
+  color: #dcb67a;
+}
+
+.folder-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.folder-count {
+  margin-left: auto;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+
+.details-body.clamped {
+  max-height: calc(1.45em * 9);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+
+.details-more {
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.92em;
+}
