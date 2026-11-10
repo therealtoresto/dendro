@@ -271,55 +271,6 @@
 /* Actions in the graph */
 
 @layer glass {
-  .row-actions {
-    position: absolute;
-    top: 50%;
-    right: 8px;
-    display: flex;
-    gap: 2px;
-    padding: 2px 4px;
-    border-radius: var(--glass-radius-pill);
-    transform: translateY(-50%) translateX(6px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.16s var(--ease-out), transform 0.2s var(--ease-spring);
-  }
-
-  .row:hover .row-actions {
-    opacity: 1;
-    transform: translateY(-50%);
-    pointer-events: auto;
-  }
-
-  body.dragging-ref .row-actions {
-    display: none;
-  }
-
-  .row-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    border-radius: var(--glass-radius-pill);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: background-color 0.14s var(--ease-out), color 0.14s var(--ease-out), transform 0.14s var(--ease-spring);
-  }
-
-  .row-action:hover {
-    background: var(--glass-hover);
-    color: var(--fg);
-    transform: translateY(-1px);
-  }
-
-  .row-action:active {
-    transform: scale(0.9);
-  }
-
   .badge[draggable='true'] {
     cursor: grab;
   }
@@ -364,9 +315,23 @@
     transform: rotate(90deg);
   }
 
-  .action-hint {
-    position: fixed;
-    border-radius: var(--glass-radius-sm);
-    animation: glass-fade 0.14s var(--ease-out) both;
+}
+
+@layer glass {
+  .details-action {
+    border-radius: var(--glass-radius-pill);
+    background: var(--glass-sheen), var(--glass-fill);
+    border-color: var(--glass-edge-soft);
+    box-shadow: inset 0 1px 0 var(--glass-edge);
+    transition: background-color 0.14s var(--ease-out), transform 0.16s var(--ease-spring);
+  }
+
+  .details-action:hover {
+    background: var(--glass-sheen), var(--glass-hover);
+    transform: translateY(-1px);
+  }
+
+  .details-action:active {
+    transform: scale(0.95);
   }
 }

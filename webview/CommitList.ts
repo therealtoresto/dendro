@@ -1,10 +1,10 @@
-import { CommitAction, CommitInfo, CommitStats, RefInfo, StashInfo, WORKING_CHANGES_KEY, WorkingSummary } from '../src/protocol';
+import { CommitInfo, CommitStats, RefInfo, StashInfo, WORKING_CHANGES_KEY, WorkingSummary } from '../src/protocol';
 import { ColumnId, Columns } from './Columns';
 import { AvatarStyle } from '../src/shared/AvatarStyle';
 import { Format } from './Format';
 import type { GraphLayoutResult } from './GraphLayout';
 import { GraphMetrics, GraphRenderer, NodeStyle } from './GraphRenderer';
-import { IconName, Icons } from './Icons';
+import { Icons } from './Icons';
 import type { RowMarker } from './Markers';
 import { Minimap } from './Minimap';
 import { BadgeOptions, RefBadges } from './RefBadges';
@@ -16,14 +16,6 @@ export interface ListRow {
   commit: CommitInfo | null;
   stash?: StashInfo;
 }
-
-const ROW_ACTIONS: { action: CommitAction; icon: IconName; title: string }[] = [
-  { action: 'createBranch', icon: 'branch', title: 'Create a branch here' },
-  { action: 'createTag', icon: 'tag', title: 'Tag this commit' },
-  { action: 'cherryPick', icon: 'cherry', title: 'Cherry-pick onto the current branch' },
-  { action: 'revert', icon: 'undo', title: 'Revert this commit' },
-  { action: 'copySha', icon: 'copy', title: 'Copy the SHA' },
-];
 
 export interface RowDisplay {
   columns: ColumnId[];
@@ -72,7 +64,6 @@ interface ListHandlers {
   onResetColumn(id: ColumnId): void;
   onRowHover(key: string, row: DOMRect, pointerX: number): void;
   onBadgeHover(commitHash: string | null): void;
-  onRowAction(action: CommitAction, hash: string): void;
   onDropRef(name: string, kind: RefInfo['kind'], targetKey: string): void;
   onRowLeave(): void;
   onScroll(): void;
@@ -84,7 +75,6 @@ const OVERLAY_GAP = 4;
 export class CommitList {
   private readonly header: HTMLElement;
   private readonly overlay: HTMLElement;
-  private readonly actionHint: HTMLElement;
   private inset = 0;
   private readonly scroller: HTMLElement;
   private readonly sizer: HTMLElement;
@@ -110,13 +100,11 @@ export class CommitList {
           <div class="list-footer"></div>
         </div>
       </div>
-      <div class="action-hint glass-strong" hidden></div>
       <div class="list-overlay glass">
         <div class="minimap"></div>
         <div class="list-header"></div>
       </div>`;
     this.overlay = container.querySelector('.list-overlay')!;
-    this.actionHint = container.querySelector('.action-hint')!;
     new ResizeObserver(() => this.updateInset()).observe(this.overlay);
 
     this.header = container.querySelector('.list-header')!;
@@ -134,7 +122,6 @@ export class CommitList {
     this.scrollMarkers = new ScrollMarkers(container.querySelector('.list-body')!);
 
     this.scroller.addEventListener('scroll', () => {
-      this.actionHint.hidden = true;
       this.hoveredKey = null;
       handlers.onScroll();
       this.queueRender();
@@ -142,7 +129,6 @@ export class CommitList {
     this.rowsElement.addEventListener('mouseover', (event) => this.onRowOver(event));
     this.rowsElement.addEventListener('mouseleave', () => {
       this.hoveredKey = null;
-      this.actionHint.hidden = true;
       this.setBadgeHover(null);
       handlers.onRowLeave();
     });
@@ -308,13 +294,7 @@ export class CommitList {
     const context = Format.escapeHtml(
       JSON.stringify({ webviewSection: 'commit', hash: commit.hash, preventDefaultContextMenuItems: true }),
     );
-    const actions = ROW_ACTIONS.map(
-      (item) => `<button class="row-action" data-row-action="${item.action}" aria-label="${item.title}">${Icons.render(item.icon, 13)}</button>`,
-    ).join('');
-    return (
-      `<div class="${classes.join(' ')}" ${top} data-key="${commit.hash}" data-vscode-context="${context}">` +
-      `${cellsHtml}<div class="row-actions glass-strong">${actions}</div></div>`
-    );
+    return `<div class="${classes.join(' ')}" ${top} data-key="${commit.hash}" data-vscode-context="${context}">${cellsHtml}</div>`;
   }
 
   private renderStashRow(model: ListModel, index: number, stash: StashInfo, classes: string[]): string {
@@ -449,12 +429,8 @@ export class CommitList {
     const overBadge = target.closest('.badge[data-ref-name]') !== null;
     this.setBadgeHover(overBadge ? row?.dataset.key ?? null : null);
 
-    const action = target.closest<HTMLElement>('.row-action');
-    this.showActionHint(action);
-
-    // A badge already explains itself and lights its branch, and the row's buttons have their own hint; the commit
-    // card would only cover them.
-    if (overBadge || target.closest('.row-actions')) {
+    // A badge already explains itself and lights its branch; the commit card would only cover it.
+    if (overBadge) {
       this.hoveredKey = null;
       this.handlers.onRowLeave();
       return;
@@ -466,24 +442,6 @@ export class CommitList {
     }
     this.hoveredKey = key;
     this.handlers.onRowHover(key, row.getBoundingClientRect(), event.clientX);
-  }
-
-  // A hint above the button the pointer is on, shown at once: the native title waits a second and hides under the card.
-  private showActionHint(button: HTMLElement | null): void {
-    const title = button?.getAttribute('aria-label');
-    if (!button || !title) {
-      this.actionHint.hidden = true;
-      return;
-    }
-    this.actionHint.textContent = title;
-    this.actionHint.hidden = false;
-    const box = button.getBoundingClientRect();
-    const width = this.actionHint.offsetWidth;
-    const height = this.actionHint.offsetHeight;
-    const left = Math.min(window.innerWidth - width - 6, Math.max(6, box.left + box.width / 2 - width / 2));
-    const top = box.top - height - 6 < 4 ? box.bottom + 6 : box.top - height - 6;
-    this.actionHint.style.left = `${left}px`;
-    this.actionHint.style.top = `${top}px`;
   }
 
   // A branch badge dragged onto a commit row: the row lights up as a target, and the drop asks what to do.
@@ -536,15 +494,6 @@ export class CommitList {
   }
 
   private onRowClick(event: MouseEvent): void {
-    const actionButton = (event.target as HTMLElement).closest<HTMLElement>('[data-row-action]');
-    if (actionButton) {
-      event.stopPropagation();
-      const rowKey = actionButton.closest<HTMLElement>('.row')?.dataset.key;
-      if (rowKey) {
-        this.handlers.onRowAction(actionButton.dataset.rowAction as CommitAction, rowKey);
-      }
-      return;
-    }
     const row = (event.target as HTMLElement).closest<HTMLElement>('.row');
     if (row?.dataset.key) {
       this.handlers.onSelect(row.dataset.key, event.metaKey || event.ctrlKey);

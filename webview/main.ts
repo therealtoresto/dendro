@@ -103,12 +103,12 @@ class GraphApp {
       onRowHover: (key, row, pointerX) => this.onRowHover(key, row, pointerX),
       onRowLeave: () => this.onRowLeave(),
       onBadgeHover: (hash) => this.highlightBranch(hash),
-      onRowAction: (action, hash) => HostBridge.post({ type: 'commitAction', action, hash }),
       onDropRef: (name, kind, targetKey) => this.dropRef(name, kind, targetKey),
       onScroll: () => this.hideHover(),
     });
     this.details = new DetailsPanel(root.querySelector('.details-content')!, {
       onSelectCommit: (hash) => this.selectCommitAnywhere(hash),
+      onCommitAction: (action, hash) => HostBridge.post({ type: 'commitAction', action, hash }),
     });
 
     this.errorBar.addEventListener('click', () => (this.errorBar.hidden = true));
@@ -520,6 +520,7 @@ class GraphApp {
   }
 
   private onRowSelect(key: string, compare: boolean): void {
+    this.setDetailsHidden(false);
     const canCompare =
       compare &&
       this.settings['graph.multiSelect'] !== false &&

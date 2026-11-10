@@ -1,5 +1,6 @@
 import type {
   ChangedFile,
+  CommitAction,
   CommitDetails,
   CommitInfo,
   ComparisonDetails,
@@ -12,7 +13,7 @@ import { AvatarStyle } from '../src/shared/AvatarStyle';
 import { FileIcons } from './FileIcons';
 import { FileTree, TreeNode } from './FileTree';
 import { Format } from './Format';
-import { Icons } from './Icons';
+import { IconName, Icons } from './Icons';
 import { HostBridge } from './HostBridge';
 import { RefBadges } from './RefBadges';
 import { WorkingCounters } from './WorkingCounters';
@@ -24,6 +25,7 @@ interface FileEntry {
 
 interface DetailsHandlers {
   onSelectCommit(hash: string): void;
+  onCommitAction(action: CommitAction, hash: string): void;
 }
 
 type Shown =
@@ -31,6 +33,14 @@ type Shown =
   | { kind: 'commit'; details: CommitDetails }
   | { kind: 'working'; details: WorkingDetails }
   | { kind: 'comparison'; details: ComparisonDetails };
+
+const COMMIT_ACTIONS: { action: CommitAction; icon: IconName; label: string; title: string }[] = [
+  { action: 'checkout', icon: 'check', label: 'Checkout', title: 'Check out this commit' },
+  { action: 'createBranch', icon: 'branch', label: 'Branch', title: 'Create a branch here' },
+  { action: 'createTag', icon: 'tag', label: 'Tag', title: 'Tag this commit' },
+  { action: 'cherryPick', icon: 'cherry', label: 'Cherry-pick', title: 'Cherry-pick onto the current branch' },
+  { action: 'revert', icon: 'undo', label: 'Revert', title: 'Revert this commit' },
+];
 
 // A long message folds to this many lines, so the changed files stay in view.
 const BODY_CLAMP_LINES = 9;
@@ -145,6 +155,7 @@ export class DetailsPanel {
           </span>
         </div>
         ${parents ? `<div class="details-parents details-muted">${details.parents.length > 1 ? 'Parents' : 'Parent'}: ${parents}</div>` : ''}
+        <div class="details-actions">${DetailsPanel.renderCommitActions()}</div>
         </div>
         <div class="details-message">
           <div class="details-subject">${Format.escapeHtml(subject)}
@@ -328,6 +339,13 @@ export class DetailsPanel {
       </div>`;
   }
 
+  private static renderCommitActions(): string {
+    return COMMIT_ACTIONS.map(
+      (item) =>
+        `<button class="details-action" data-action="commit-action" data-commit-action="${item.action}" title="${item.title}">${Icons.render(item.icon, 13)}${item.label}</button>`,
+    ).join('');
+  }
+
   private onClick(event: MouseEvent): void {
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-action]');
     if (!target) {
@@ -337,6 +355,10 @@ export class DetailsPanel {
     const action = target.dataset.action;
     if (action === 'copy') {
       HostBridge.post({ type: 'copy', text: target.dataset.text ?? '' });
+      return;
+    }
+    if (action === 'commit-action' && this.shown.kind === 'commit') {
+      this.handlers.onCommitAction(target.dataset.commitAction as CommitAction, this.shown.details.hash);
       return;
     }
     if (action === 'select') {
