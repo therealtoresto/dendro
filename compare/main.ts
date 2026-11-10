@@ -94,7 +94,7 @@ class CompareApp {
       .map(
         (commit) => `
         <button class="cp-commit" data-commit="${commit.hash}" title="Show in the Commit Graph">
-          <span class="cp-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${Format.escapeHtml(AvatarStyle.getInitials(commit.author))}</span>
+          <span class="cp-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.renderArt(commit.email)}</span>
           <span class="cp-commit-text">
             <span class="cp-subject">${Format.escapeHtml(commit.subject)}</span>
             <span class="cp-meta">${Format.escapeHtml(commit.author)} · ${Format.escapeHtml(this.dates.formatAgoOrDate(commit.date))}</span>

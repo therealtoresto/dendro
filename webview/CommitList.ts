@@ -414,7 +414,7 @@ export class CommitList {
         ? `<span class="ref-badges">${badges}</span><span class="ref-link" style="background:${GraphRenderer.getColor(layout.color)}"></span>`
         : badges,
       graph: GraphRenderer.renderRow(layout, model.graphWidth, nodeStyle, model.metrics, {
-        initials: Format.escapeHtml(AvatarStyle.getInitials(commit.author)),
+        art: AvatarStyle.renderArt(commit.email),
         color: AvatarStyle.getColor(commit.email),
         image: model.avatars.get(commit.email.toLowerCase()),
       }, linkBadges),
@@ -432,11 +432,11 @@ export class CommitList {
       return `<span class="author-name" title="${title}">${Format.escapeHtml(commit.author)}</span>`;
     }
 
-    // The picture lies over the initials, which show until it arrives and stay for authors without one.
+    // The picture lies over the generated one, which shows until it arrives and stays for authors without one.
     const image = picture ? `<img class="avatar-image" src="${picture}" alt="">` : '';
     return (
       `<span class="avatar" style="background:${AvatarStyle.getColor(commit.email)}" title="${title}">` +
-      `${Format.escapeHtml(AvatarStyle.getInitials(commit.author))}${image}</span>` +
+      `${AvatarStyle.renderArt(commit.email)}${image}</span>` +
       `<span class="author-name" title="${title}">${Format.escapeHtml(commit.author)}</span>`
     );
   }

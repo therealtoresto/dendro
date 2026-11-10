@@ -77,7 +77,7 @@ class RebaseApp {
         `<button class="rb-action action-${item.action}${item.action === row.action ? ' active' : ''}" data-set="${item.action}" data-index="${index}" title="${item.hint} (${item.key})">${item.action}</button>`,
     ).join('');
     const avatar = row.email
-      ? `<span class="rb-avatar" style="background:${AvatarStyle.getColor(row.email)}">${Format.escapeHtml(AvatarStyle.getInitials(row.author ?? '?'))}</span>`
+      ? `<span class="rb-avatar" style="background:${AvatarStyle.getColor(row.email)}">${AvatarStyle.renderArt(row.email)}</span>`
       : '<span class="rb-avatar"></span>';
     const meta = [row.author, row.date ? this.dates.formatAgoOrDate(row.date) : ''].filter(Boolean).join(' · ');
 

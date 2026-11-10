@@ -324,7 +324,7 @@ class InsightsApp {
     if (picture) {
       return `<img class="in-avatar" src="${picture}" alt="">`;
     }
-    return `<span class="in-avatar" style="background:${AvatarStyle.getColor(person.email)}">${Format.escapeHtml(AvatarStyle.getInitials(person.name))}</span>`;
+    return `<span class="in-avatar" style="background:${AvatarStyle.getColor(person.email)}">${AvatarStyle.renderArt(person.email)}</span>`;
   }
 
   private onClick(target: HTMLElement): void {

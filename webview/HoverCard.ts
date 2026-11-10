@@ -109,7 +109,7 @@ export class HoverCard {
 
     this.element.innerHTML = `
       <div class="hc-head">
-        <span class="avatar hc-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${Format.escapeHtml(AvatarStyle.getInitials(commit.author))}${picture}</span>
+        <span class="avatar hc-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.renderArt(commit.email)}${picture}</span>
         <div class="hc-who">
           <div class="hc-line">
             <span class="hc-author" title="${Format.escapeHtml(commit.email)}">${Format.escapeHtml(commit.author)}</span>

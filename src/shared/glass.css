@@ -3,6 +3,14 @@
 
 @layer base, glass;
 
+/* A generated picture fills its avatar; a downloaded picture, laid over it, covers it. */
+.avatar-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: none;
+}
+
 @layer glass {
   :root {
     --glass-radius-lg: 18px;

@@ -134,7 +134,7 @@ export class DetailsPanel {
       <div class="details-scroll">
         <div class="details-header">
         <div class="details-author">
-          <span class="avatar avatar-large" style="background:${AvatarStyle.getColor(details.email)}">${Format.escapeHtml(AvatarStyle.getInitials(details.author))}${avatar ? `<img class="avatar-image" src="${avatar}" alt="">` : ''}</span>
+          <span class="avatar avatar-large" style="background:${AvatarStyle.getColor(details.email)}">${AvatarStyle.renderArt(details.email)}${avatar ? `<img class="avatar-image" src="${avatar}" alt="">` : ''}</span>
           <div class="details-author-text">
             <div class="details-author-name" title="${Format.escapeHtml(details.email)}">${Format.escapeHtml(details.author)}</div>
             <div class="details-muted">

@@ -408,11 +408,11 @@ export class FileAnnotations implements vscode.Disposable {
     const key = commit.uncommitted ? 'you' : commit.email;
     let icon = this.avatarIcons.get(key);
     if (!icon) {
-      const initials = commit.uncommitted ? '+' : AvatarStyle.getInitials(commit.author);
-      const color = commit.uncommitted ? '#6b7280' : AvatarStyle.getColor(commit.email);
       icon = FileAnnotations.toSvgUri(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="8" fill="${color}"/>` +
-          `<text x="8" y="11" font-size="7" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">${initials}</text></svg>`,
+        commit.uncommitted
+          ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><circle cx="8" cy="8" r="8" fill="#6b7280"/>` +
+              `<text x="8" y="11" font-size="7" font-family="sans-serif" font-weight="700" text-anchor="middle" fill="#fff">+</text></svg>`
+          : AvatarStyle.renderArt(commit.email, true).replace('<svg ', '<svg width="16" height="16" '),
       );
       this.avatarIcons.set(key, icon);
     }

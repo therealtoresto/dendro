@@ -321,11 +321,11 @@ class HistoryApp {
       .map((lane, index) => {
         const top = lanesTop + index * laneHeight;
         const picture = lane.email ? this.avatars.get(lane.email) : undefined;
-        const initials = lane.email ? AvatarStyle.getInitials(lane.name) : '…';
+        const art = lane.email ? AvatarStyle.renderArt(lane.email) : '…';
         const background = lane.email ? AvatarStyle.getColor(lane.email) : 'var(--fh-muted)';
         return (
           `<div class="fh-lane-label" style="top:${top}px;height:${laneHeight}px">` +
-          `<span class="fh-avatar" style="background:${background}">${svgEscape(initials)}${picture ? `<img src="${picture}" alt="">` : ''}</span>` +
+          `<span class="fh-avatar" style="background:${background}">${art}${picture ? `<img src="${picture}" alt="">` : ''}</span>` +
           `<span class="fh-lane-name" data-lane="${index}"></span><span class="fh-lane-count">${lane.commits}</span></div>`
         );
       })

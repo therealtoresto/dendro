@@ -134,7 +134,7 @@ export class Previews {
         }
         const pillsHtml = pills.join('');
         const author = avatars
-          ? `<span class="pv-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.getInitials(commit.author)}</span>`
+          ? `<span class="pv-avatar" style="background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.renderArt(commit.email)}</span>`
           : `<span class="pv-muted">${commit.author}</span>`;
         const [added, deleted] = row.changes;
         const total = added + deleted;
@@ -241,7 +241,7 @@ export class Previews {
       const repeats = compact && index > 0 && CODE_LINES[index - 1].commit === line.commit;
       const text = repeats ? '' : Previews.escape(Previews.formatSample(format, values, locale, commit));
       const avatar = avatars
-        ? `<span class="pv-avatar small" style="${repeats ? 'visibility:hidden;' : ''}background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.getInitials(commit.author)}</span>`
+        ? `<span class="pv-avatar small" style="${repeats ? 'visibility:hidden;' : ''}background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.renderArt(commit.email)}</span>`
         : '';
       const border = heatmap ? `border-${heatSide}: 2px solid ${heatColors[line.commit]}` : '';
       return `${avatar}<span class="pv-blame" style="${border}">${text}</span>`;

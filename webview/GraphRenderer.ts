@@ -26,7 +26,8 @@ export interface GraphMetrics {
 }
 
 export interface NodePicture {
-  initials: string;
+  // The generated picture, shown until (or instead of) a downloaded one.
+  art: string;
   color: string;
   image: string | undefined;
 }
@@ -48,7 +49,7 @@ export class GraphRenderer {
     return Math.max(MIN_GRAPH_WIDTH, Math.min(natural, maxWidth));
   }
 
-  // Lines are SVG; a picture node is an HTML circle laid over them, so it can hold an image or initials.
+  // Lines are SVG; a picture node is an HTML circle laid over them, so it can hold an image or a generated picture.
   static renderRow(
     layout: RowLayout,
     width: number,
@@ -105,7 +106,7 @@ export class GraphRenderer {
       `left:${x - radius}px;top:${y - radius}px;width:${size}px;height:${size}px;` +
       `font-size:${Math.max(7, Math.round(radius * 0.8))}px;--lane:${GraphRenderer.getColor(colorIndex)};` +
       `background:${picture.color}`;
-    return `<span class="graph-node node-${nodeStyle}" style="${style}">${picture.initials}${image}</span>`;
+    return `<span class="graph-node node-${nodeStyle}" style="${style}">${picture.art}${image}</span>`;
   }
 
   private static renderNode(x: number, y: number, colorIndex: number, nodeStyle: NodeStyle, metrics: GraphMetrics): string {
