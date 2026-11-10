@@ -3,12 +3,14 @@ import * as vscode from 'vscode';
 import { AutoFetcher } from './AutoFetcher';
 import { AvatarService } from './AvatarService';
 import { BlameService } from './blame/BlameService';
+import { CommitDiffs } from './CommitDiffs';
 import { BlameHovers } from './editor/BlameHovers';
 import { AnnotationKind, FileAnnotations } from './editor/FileAnnotations';
 import { LineBlame } from './editor/LineBlame';
 import type { GitExtension } from './git/git';
 import { CommitAction, GraphController, MenuContext } from './GraphController';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
+import { HistoryViews } from './history/HistoryViews';
 import { RevisionContentProvider, REVISION_SCHEME } from './RevisionContentProvider';
 import { Settings } from './Settings';
 import { SettingsPanel } from './SettingsPanel';
@@ -46,6 +48,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const subscriptions = context.subscriptions;
 
   subscriptions.push(
+    new HistoryViews(blame),
     autoFetcher,
     avatars,
     blame,
@@ -89,7 +92,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.window.setStatusBarMessage('$(check) Dendro: copied', 2000);
     }),
     vscode.commands.registerCommand('dendro.openLineChanges', (root: string, sha: string, filePath: string) =>
-      openCommitFileDiff(blame, root, sha, filePath),
+      CommitDiffs.openFileChange(blame.createGit(root), sha, filePath),
     ),
     vscode.commands.registerCommand(
       'dendro.statusBarAction',
@@ -100,7 +103,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
         switch (Settings.get<string>('statusBar.command')) {
           case 'openChanges':
-            await openCommitFileDiff(blame, root, sha, filePath);
+            await CommitDiffs.openFileChange(blame.createGit(root), sha, filePath);
             return;
           case 'copySha':
             await vscode.commands.executeCommand('dendro.copyText', sha);
@@ -137,19 +140,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }),
     );
   }
-}
-
-// What the commit changed in this file: its parent's version against its own, following a rename.
-async function openCommitFileDiff(blame: BlameService, root: string, sha: string, filePath: string): Promise<void> {
-  const git = blame.createGit(root);
-  const details = await git.getCommitDetails(sha);
-  const file = details.files.find((candidate) => candidate.path === filePath);
-  const parent = details.parents[0] ?? null;
-  const oldPath = file?.oldPath ?? filePath;
-  const left = RevisionContentProvider.buildUri(root, oldPath, file?.status === 'A' ? null : parent);
-  const right = RevisionContentProvider.buildUri(root, filePath, file?.status === 'D' ? null : sha);
-  const title = `${path.basename(filePath)} (${parent ? parent.slice(0, 7) : 'root'} ↔ ${sha.slice(0, 7)})`;
-  await vscode.commands.executeCommand('vscode.diff', left, right, title, { preview: true });
 }
 
 export function deactivate(): void {}

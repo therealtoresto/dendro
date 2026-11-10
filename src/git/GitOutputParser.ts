@@ -5,6 +5,17 @@ export const RECORD_SEPARATOR = '\x1e';
 
 const BODY_PREVIEW_LENGTH = 240;
 
+export interface HistoryEntry {
+  hash: string;
+  parents: string[];
+  author: string;
+  email: string;
+  date: number;
+  subject: string;
+  path?: string;
+  oldPath?: string;
+}
+
 interface LineStats {
   additions?: number;
   deletions?: number;
@@ -35,6 +46,39 @@ export class GitOutputParser {
     }
 
     return commits;
+  }
+
+  // `--format=%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s`, optionally with `--name-status` lines after each header,
+  // which say the file's path in that commit ("R087<tab>old<tab>new" after a rename).
+  static parseHistory(output: string): HistoryEntry[] {
+    const entries: HistoryEntry[] = [];
+
+    for (const record of output.split(RECORD_SEPARATOR)) {
+      const [header, ...rest] = record.split('\n');
+      if (!header.trim()) {
+        continue;
+      }
+
+      const [hash, parents, author, email, date, subject] = header.split(FIELD_SEPARATOR);
+      const entry: HistoryEntry = {
+        hash,
+        parents: parents ? parents.split(' ') : [],
+        author,
+        email,
+        date: Number(date),
+        subject,
+      };
+
+      const change = rest.find((line) => /^[A-Z]\d*\t/.test(line));
+      if (change) {
+        const parts = change.split('\t');
+        entry.path = parts[parts.length - 1];
+        entry.oldPath = parts.length > 2 ? parts[1] : undefined;
+      }
+      entries.push(entry);
+    }
+
+    return entries;
   }
 
   static parseRefs(output: string): RefInfo[] {

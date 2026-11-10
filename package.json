@@ -143,6 +143,52 @@
         "command": "dendro.copyRefName",
         "title": "Copy Name",
         "category": "Dendro"
+      },
+      {
+        "command": "dendro.showFileHistory",
+        "title": "Show File History",
+        "category": "Dendro",
+        "icon": "$(history)"
+      },
+      {
+        "command": "dendro.showLineHistory",
+        "title": "Show Line History",
+        "category": "Dendro",
+        "icon": "$(history)"
+      },
+      {
+        "command": "dendro.history.refresh",
+        "title": "Refresh",
+        "category": "Dendro",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dendro.history.openChange",
+        "title": "Open Changes",
+        "category": "Dendro",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "dendro.history.openRevision",
+        "title": "Open File at This Commit",
+        "category": "Dendro",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "dendro.history.showInGraph",
+        "title": "Show in Commit Graph",
+        "category": "Dendro",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "dendro.history.copySha",
+        "title": "Copy Commit SHA",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.history.loadMore",
+        "title": "Load More",
+        "category": "Dendro"
       }
     ],
     "menus": {
@@ -231,6 +277,14 @@
           "command": "dendro.clearFileAnnotations",
           "group": "2@1",
           "when": "dendro.annotations"
+        },
+        {
+          "command": "dendro.showFileHistory",
+          "group": "0_history@1"
+        },
+        {
+          "command": "dendro.showLineHistory",
+          "group": "0_history@2"
         }
       ],
       "view/title": [
@@ -238,6 +292,11 @@
           "command": "dendro.showSettings",
           "group": "navigation",
           "when": "view == dendro.graphView"
+        },
+        {
+          "command": "dendro.history.refresh",
+          "group": "navigation",
+          "when": "view == dendro.fileHistory || view == dendro.lineHistory"
         }
       ],
       "commandPalette": [
@@ -292,6 +351,58 @@
         {
           "command": "dendro.copyRefName",
           "when": "false"
+        },
+        {
+          "command": "dendro.history.openChange",
+          "when": "false"
+        },
+        {
+          "command": "dendro.history.openRevision",
+          "when": "false"
+        },
+        {
+          "command": "dendro.history.showInGraph",
+          "when": "false"
+        },
+        {
+          "command": "dendro.history.copySha",
+          "when": "false"
+        },
+        {
+          "command": "dendro.history.loadMore",
+          "when": "false"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dendro.history.showInGraph",
+          "group": "inline@1",
+          "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.history.openRevision",
+          "group": "inline@2",
+          "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.history.openChange",
+          "group": "1_open@1",
+          "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.history.openRevision",
+          "group": "1_open@2",
+          "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.history.showInGraph",
+          "group": "2_graph@1",
+          "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.history.copySha",
+          "group": "3_copy@1",
+          "when": "viewItem == dendro.historyCommit"
         }
       ]
     },
@@ -973,13 +1084,20 @@
     "submenus": [
       {
         "id": "dendro.annotations",
-        "label": "Dendro Annotations"
+        "label": "Dendro"
       }
     ],
     "viewsContainers": {
       "panel": [
         {
           "id": "dendro-panel",
+          "title": "Dendro",
+          "icon": "media/dendro-dark.svg"
+        }
+      ],
+      "activitybar": [
+        {
+          "id": "dendro-history",
           "title": "Dendro",
           "icon": "media/dendro-dark.svg"
         }
@@ -992,6 +1110,16 @@
           "id": "dendro.graphView",
           "name": "Commit Graph",
           "when": "config.dendro.graph.location == 'panel'"
+        }
+      ],
+      "dendro-history": [
+        {
+          "id": "dendro.fileHistory",
+          "name": "File History"
+        },
+        {
+          "id": "dendro.lineHistory",
+          "name": "Line History"
         }
       ]
     }

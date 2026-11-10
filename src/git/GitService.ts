@@ -10,9 +10,10 @@ import type {
   RefInfo,
   WorkingDetails,
 } from '../protocol';
-import { FIELD_SEPARATOR, GitOutputParser } from './GitOutputParser';
+import { FIELD_SEPARATOR, GitOutputParser, HistoryEntry } from './GitOutputParser';
 
 const LOG_FORMAT = ['%H', '%P', '%an', '%ae', '%at', '%ct', '%s', '%b'].join('%x1f') + '%x1e';
+const HISTORY_FORMAT = '%x1e' + ['%H', '%P', '%an', '%ae', '%at', '%s'].join('%x1f');
 const DETAILS_FORMAT = ['%H', '%P', '%an', '%ae', '%at', '%cn', '%ce', '%ct', '%B'].join('%x1f');
 const MAX_OUTPUT_BYTES = 512 * 1024 * 1024;
 
@@ -165,6 +166,18 @@ export class GitService {
       message: message.trimEnd(),
       files,
     };
+  }
+
+  // Commits that changed the file, following it across renames.
+  async getFileHistory(filePath: string, limit: number): Promise<HistoryEntry[]> {
+    const args = ['log', '--follow', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`, '--name-status', '--', filePath];
+    return GitOutputParser.parseHistory(await this.run(args));
+  }
+
+  // Commits that changed these lines (1-based, inclusive), as git traces the lines back.
+  async getLineHistory(filePath: string, startLine: number, endLine: number, limit: number): Promise<HistoryEntry[]> {
+    const args = ['log', `-L${startLine},${endLine}:${filePath}`, '-s', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`];
+    return GitOutputParser.parseHistory(await this.run(args));
   }
 
   // Commits the upstream has and HEAD does not: fetched, not pulled yet.

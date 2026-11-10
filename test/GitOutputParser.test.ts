@@ -93,3 +93,31 @@ describe('GitOutputParser', () => {
     assert.deepEqual(GitOutputParser.parseAheadBehind('2\t16\n'), { ahead: 2, behind: 16 });
   });
 });
+
+describe('GitOutputParser history', () => {
+  it('reads commits with the path of the file in each one, across a rename', () => {
+    const output =
+      R + ['h3', 'h2', 'Ann Lee', 'ann@x.io', '1700000300', 'Tidy'].join(F) + '\n\nM\tsrc/new.ts\n' +
+      R + ['h2', 'h1', 'Bob', 'bob@x.io', '1700000200', 'Move it'].join(F) + '\n\nR091\tsrc/old.ts\tsrc/new.ts\n' +
+      R + ['h1', '', 'Bob', 'bob@x.io', '1700000100', 'Start'].join(F) + '\n\nA\tsrc/old.ts\n';
+
+    const history = GitOutputParser.parseHistory(output);
+
+    assert.deepEqual(
+      history.map((entry) => [entry.hash, entry.path, entry.oldPath]),
+      [
+        ['h3', 'src/new.ts', undefined],
+        ['h2', 'src/new.ts', 'src/old.ts'],
+        ['h1', 'src/old.ts', undefined],
+      ],
+    );
+    assert.deepEqual(history[0].parents, ['h2']);
+  });
+
+  it('reads line history, which has no file lines', () => {
+    const output = R + ['h9', 'h8', 'Dee', 'dee@x.io', '1700000900', 'Fix the edge'].join(F) + '\n';
+    const [entry] = GitOutputParser.parseHistory(output);
+    assert.equal(entry.subject, 'Fix the edge');
+    assert.equal(entry.path, undefined);
+  });
+});
