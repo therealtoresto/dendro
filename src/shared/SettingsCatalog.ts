@@ -322,10 +322,10 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
         type: 'enum',
         control: 'segmented',
         label: 'Open file diffs',
-        default: 'beside',
+        default: 'active',
         options: [
+          { value: 'active', label: 'in the main editor (default)' },
           { value: 'beside', label: 'beside the graph' },
-          { value: 'active', label: 'in place of the graph' },
         ],
       },
       {

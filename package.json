@@ -1192,15 +1192,15 @@
           },
           "dendro.graph.diffLocation": {
             "description": "Open file diffs",
-            "default": "beside",
+            "default": "active",
             "type": "string",
             "enum": [
-              "beside",
-              "active"
+              "active",
+              "beside"
             ],
             "enumDescriptions": [
-              "beside the graph",
-              "in place of the graph"
+              "in the main editor (default)",
+              "beside the graph"
             ]
           },
           "dendro.graph.autoFetch.enabled": {
