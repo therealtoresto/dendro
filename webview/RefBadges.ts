@@ -104,7 +104,7 @@ export class RefBadges {
     let remoteMark = '';
     if (badge.remotes.length > 0) {
       const names = options.showRemoteNames ? Format.escapeHtml(badge.remotes.join(' ')) : '';
-      remoteMark = `<span class="badge-remote">${Icons.render('cloud', 11)}${names}</span>`;
+      remoteMark = `<span class="badge-origin">${Icons.render('cloud', 11)}${names}</span>`;
     }
 
     let upstreamMark = '';

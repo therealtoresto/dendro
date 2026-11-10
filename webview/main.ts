@@ -398,6 +398,7 @@ class GraphApp {
       headHash: state?.head.hash ?? null,
       headBranch: state?.head.branch ?? null,
       selectedKey: this.selectedKey,
+      selectedLaneColor: this.getSelectedLaneColor(),
       compareKey: this.compareKey,
       searchQuery: this.search?.query ?? '',
       matches: this.search?.matches ?? null,
@@ -689,6 +690,11 @@ class GraphApp {
     event.preventDefault();
     const index = Math.min(this.rows.length - 1, Math.max(0, next));
     this.select(this.rows[index].key);
+  }
+
+  private getSelectedLaneColor(): number | null {
+    const index = this.rows.findIndex((row) => row.key === this.selectedKey);
+    return index >= 0 ? this.layout.rows[index]?.color ?? null : null;
   }
 
   private getLaneColor(hash: string): string {

@@ -55,10 +55,17 @@ export class GraphRenderer {
     nodeStyle: NodeStyle,
     metrics: GraphMetrics,
     picture?: NodePicture,
+    linkFromLeft = false,
   ): string {
     const height = metrics.rowHeight;
     const middle = height / 2;
     let lines = '';
+
+    // The branch badges sit in the column on the left; a line ties them to their commit's node.
+    if (linkFromLeft) {
+      const nodeLeft = GraphRenderer.getLaneX(layout.lane, metrics) - (metrics.avatarNodes ? metrics.nodeRadius : 5);
+      lines += `<path d="M0 ${middle}H${nodeLeft}" stroke="${GraphRenderer.getColor(layout.color)}" stroke-width="2"/>`;
+    }
 
     for (const segment of layout.segments) {
       const x1 = GraphRenderer.getLaneX(segment.fromLane, metrics);

@@ -39,6 +39,7 @@ export interface ListModel {
   headHash: string | null;
   headBranch: string | null;
   selectedKey: string | null;
+  selectedLaneColor: number | null;
   compareKey: string | null;
   searchQuery: string;
   matches: Set<string> | null;
@@ -237,7 +238,14 @@ export class CommitList {
 
     const cells = commit ? this.renderCommitCells(model, index, commit) : this.renderWorkingCells(model, index);
     const cellsHtml = model.display.columns.map((id) => `<div class="cell ${id}">${cells[id]}</div>`).join('');
-    const top = `style="top:${index * this.rowHeight}px"`;
+    const laneColor = model.layout.rows[index].color;
+    let top = `style="top:${index * this.rowHeight}px"`;
+
+    // The rows of the selected commit's branch line get a light wash of the branch color.
+    if (model.selectedLaneColor !== null && laneColor === model.selectedLaneColor && row.key !== model.selectedKey) {
+      classes.push('lane-tint');
+      top = `style="top:${index * this.rowHeight}px;--tint:${GraphRenderer.getColor(laneColor)}"`;
+    }
 
     if (!commit) {
       return `<div class="${classes.join(' ')} working" ${top} data-key="${WORKING_CHANGES_KEY}">${cellsHtml}</div>`;
@@ -295,6 +303,7 @@ export class CommitList {
 
     const refs = model.refsByHash.get(commit.hash) ?? [];
     const badges = RefBadges.render(refs, model.headBranch, GraphRenderer.getColor(layout.color), display.badges);
+    const linkBadges = badges !== '' && !display.pillsInline && display.columns.includes('refs') && display.columns.includes('graph');
     const body = commit.bodyPreview
       ? `<span class="body">${Format.highlight(commit.bodyPreview, model.searchQuery)}</span>`
       : '';
@@ -302,12 +311,14 @@ export class CommitList {
     const date = display.formatDate(commit);
 
     return {
-      refs: badges,
+      refs: linkBadges
+        ? `<span class="ref-badges">${badges}</span><span class="ref-link" style="background:${GraphRenderer.getColor(layout.color)}"></span>`
+        : badges,
       graph: GraphRenderer.renderRow(layout, model.graphWidth, nodeStyle, model.metrics, {
         initials: Format.escapeHtml(AvatarStyle.getInitials(commit.author)),
         color: AvatarStyle.getColor(commit.email),
         image: model.avatars.get(commit.email.toLowerCase()),
-      }),
+      }, linkBadges),
       message: `${inlineBadges}<span class="subject">${Format.highlight(commit.subject, model.searchQuery)}</span>${body}`,
       author: CommitList.renderAuthor(commit, display.avatars, model.avatars.get(commit.email.toLowerCase())),
       changes: CommitList.renderChanges(model.statsByHash.get(commit.hash), model.largestChange),
