@@ -1,0 +1,340 @@
+:root {
+  --bg: var(--vscode-editor-background);
+  --fg: var(--vscode-foreground);
+  --muted: var(--vscode-descriptionForeground);
+  --border: var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  --added: var(--vscode-gitDecoration-addedResourceForeground, #81b88b);
+  --modified: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  --deleted: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  --mono: var(--vscode-editor-font-family, ui-monospace, monospace);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+#app {
+  padding: 14px 16px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#app.cp-loading > * {
+  opacity: 0.55;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.icon {
+  flex: none;
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.cp-empty {
+  padding: 40px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.cp-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+}
+
+.cp-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  cursor: pointer;
+  max-width: 40%;
+}
+
+.cp-side-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-side-sha,
+.cp-sha {
+  font-family: var(--mono);
+  color: var(--muted);
+  font-size: 0.9em;
+}
+
+.cp-swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.cp-modes {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.cp-modes button {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cp-modes button.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.cp-summary {
+  margin: 0 4px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.cp-summary b {
+  color: var(--fg);
+}
+
+.cp-link {
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+}
+
+.cp-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .cp-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cp-column,
+.cp-files {
+  padding: 12px;
+  min-width: 0;
+}
+
+h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 4px 10px;
+  font-size: 0.82em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.cp-count {
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  letter-spacing: 0;
+}
+
+.cp-lines {
+  margin-left: auto;
+  font-family: var(--mono);
+  text-transform: none;
+}
+
+.cp-commit,
+.cp-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cp-commit:hover,
+.cp-file:hover,
+.cp-side:hover,
+.cp-swap:hover {
+  background: color-mix(in srgb, var(--fg) 9%, transparent);
+}
+
+.cp-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cp-commit-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.cp-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-meta,
+.cp-muted,
+.cp-none {
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.cp-none {
+  padding: 6px 8px;
+}
+
+.cp-file-name {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-file-folder {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.9em;
+  direction: rtl;
+  text-align: left;
+}
+
+.cp-file-lines {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+.add {
+  color: var(--added);
+}
+
+.del {
+  color: var(--deleted);
+}
+
+.cp-status {
+  width: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.status-A,
+.status-C {
+  color: var(--added);
+}
+
+.status-M,
+.status-R,
+.status-T {
+  color: var(--modified);
+}
+
+.status-D {
+  color: var(--deleted);
+}
+
+.file-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--file-color) 22%, transparent);
+  color: var(--file-color);
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--mono);
+}
+
+.file-icon-plain {
+  background: none;
+  color: var(--muted);
+}
+
+.cp-recent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cp-chip {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.92em;
+}
+
+.cp-chip:hover {
+  background: color-mix(in srgb, var(--fg) 9%, transparent);
+}
+
+.cp-commit-list {
+  max-height: 360px;
+  overflow-y: auto;
+}

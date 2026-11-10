@@ -9,4 +9,6 @@
 !dist/settings.css
 !dist/history.js
 !dist/history.css
+!dist/compare.js
+!dist/compare.css
 !media/**

@@ -1,6 +1,7 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { GitService } from './git/GitService';
+import type { ChangedFile } from './protocol';
 import { RevisionContentProvider } from './RevisionContentProvider';
 
 export class CommitDiffs {
@@ -15,6 +16,13 @@ export class CommitDiffs {
     const right = RevisionContentProvider.buildUri(git.root, filePath, file?.status === 'D' ? null : sha);
     const title = `${path.basename(filePath)} (${parent ? parent.slice(0, 7) : 'root'} ↔ ${sha.slice(0, 7)})`;
     await vscode.commands.executeCommand('vscode.diff', left, right, title, { preview: true });
+  }
+
+  // One file between two revisions; a side without the file shows as empty.
+  static async openBetween(root: string, left: string, right: string, file: ChangedFile, title: string): Promise<void> {
+    const before = RevisionContentProvider.buildUri(root, file.oldPath ?? file.path, file.status === 'A' ? null : left);
+    const after = RevisionContentProvider.buildUri(root, file.path, file.status === 'D' ? null : right);
+    await vscode.commands.executeCommand('vscode.diff', before, after, `${path.basename(file.path)} (${title})`, { preview: true });
   }
 
   static async openRevision(root: string, sha: string, filePath: string): Promise<void> {

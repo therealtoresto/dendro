@@ -167,6 +167,14 @@ export class GraphController {
     this.scheduleRefresh(true);
   }
 
+  get root(): string | undefined {
+    return this.git?.root;
+  }
+
+  get currentBranch(): string {
+    return this.head.branch ?? 'HEAD';
+  }
+
   // A commit from another repository first switches the graph to it; the commit is shown once its list is loaded.
   revealCommit(hash: string, root?: string): void {
     this.host.reveal();

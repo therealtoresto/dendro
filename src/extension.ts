@@ -4,6 +4,7 @@ import { AutoFetcher } from './AutoFetcher';
 import { AvatarService } from './AvatarService';
 import { BlameService } from './blame/BlameService';
 import { CommitDiffs } from './CommitDiffs';
+import { ComparePanel } from './compare/ComparePanel';
 import { BlameCodeLens } from './editor/BlameCodeLens';
 import { BlameHovers } from './editor/BlameHovers';
 import { AnnotationKind, FileAnnotations } from './editor/FileAnnotations';
@@ -115,6 +116,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dendro.showCommit', (sha: string, root?: string) =>
       GraphPanel.open(context, api, sha, root),
     ),
+    vscode.commands.registerCommand('dendro.compare', async () => {
+      const editorUri = vscode.window.activeTextEditor?.document.uri;
+      const root = (editorUri && blame.findRoot(editorUri)) ?? api.repositories[0]?.rootUri.fsPath;
+      if (root) {
+        const head = await blame.createGit(root).getHead();
+        await ComparePanel.show(context, blame, root, head.branch ?? 'HEAD');
+      }
+    }),
+    vscode.commands.registerCommand('dendro.compareRefs', (root: string, left: string, right?: string) =>
+      ComparePanel.show(context, blame, root, left, right),
+    ),
+    vscode.commands.registerCommand('dendro.compareRefWithCurrent', (menu: MenuContext) => {
+      const controller = GraphController.findByViewId(menu?.webview);
+      if (controller?.root && menu.refName) {
+        return ComparePanel.show(context, blame, controller.root, controller.currentBranch, menu.refName);
+      }
+      return undefined;
+    }),
     vscode.commands.registerCommand('dendro.searchGraph', async (query: string) => {
       await GraphPanel.open(context, api);
       GraphController.latest?.searchFor(query);

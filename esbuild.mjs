@@ -33,6 +33,15 @@ const builds = [
     sourcemap: true,
   },
   {
+    entryPoints: ['compare/main.ts'],
+    outfile: 'dist/compare.js',
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    target: 'es2022',
+    sourcemap: true,
+  },
+  {
     entryPoints: ['settings/main.ts'],
     outfile: 'dist/settings.js',
     bundle: true,
@@ -60,6 +69,7 @@ const copyStyles = () =>
     buildPageStyles('webview', 'webview'),
     buildPageStyles('settings', 'settings'),
     buildPageStyles('history', 'history'),
+    buildPageStyles('compare', 'compare'),
   ]);
 
 if (watch) {

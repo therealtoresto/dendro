@@ -243,6 +243,28 @@ export class GitService {
     return GitOutputParser.parseShortStatLine(await this.run(['diff', 'HEAD', '--shortstat']));
   }
 
+  // Commits only one side has, newest first, at most `limit` per side. Each side is its own query: one
+  // `--left-right` log cut at a count would drop the older side entirely.
+  async getSideCommits(left: string, right: string, limit: number): Promise<{ onlyLeft: HistoryEntry[]; onlyRight: HistoryEntry[] }> {
+    const readSide = async (from: string, to: string) =>
+      GitOutputParser.parseHistory(await this.run(['log', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`, `${from}..${to}`, '--']));
+    const [onlyLeft, onlyRight] = await Promise.all([readSide(right, left), readSide(left, right)]);
+    return { onlyLeft, onlyRight };
+  }
+
+  async countSideCommits(left: string, right: string): Promise<{ onlyLeft: number; onlyRight: number }> {
+    const counts = GitOutputParser.parseAheadBehind(await this.run(['rev-list', '--left-right', '--count', `${left}...${right}`]));
+    return { onlyLeft: counts.ahead, onlyRight: counts.behind };
+  }
+
+  async getMergeBase(left: string, right: string): Promise<string | null> {
+    return this.readOptional(['merge-base', left, right]);
+  }
+
+  async resolveCommit(ref: string): Promise<string | null> {
+    return this.readOptional(['rev-parse', '--verify', '-q', `${ref}^{commit}`]);
+  }
+
   async getComparisonFiles(base: string, target: string): Promise<ChangedFile[]> {
     const diffArgs = ['diff', '-M', '-z', base, target];
     const [nameStatus, numstat] = await Promise.all([

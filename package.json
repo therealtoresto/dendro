@@ -378,6 +378,28 @@
         "title": "Stash All Changes…",
         "category": "Dendro",
         "icon": "$(archive)"
+      },
+      {
+        "command": "dendro.compare",
+        "title": "Compare Branches, Tags or Commits…",
+        "category": "Dendro",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "dendro.compareRefs",
+        "title": "Compare",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.compareRefWithCurrent",
+        "title": "Compare with Current Branch",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.compare",
+        "title": "Compare with Current Branch",
+        "category": "Dendro",
+        "icon": "$(git-compare)"
       }
     ],
     "menus": {
@@ -493,6 +515,11 @@
           "command": "dendro.stashDrop",
           "group": "9_delete@1",
           "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'stash'"
+        },
+        {
+          "command": "dendro.compareRefWithCurrent",
+          "group": "2_integrate@3",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
         }
       ],
       "editor/title": [
@@ -575,6 +602,11 @@
           "command": "dendro.repo.stashSave",
           "group": "navigation@1",
           "when": "view == dendro.stashes"
+        },
+        {
+          "command": "dendro.compare",
+          "group": "navigation@2",
+          "when": "view == dendro.branches"
         }
       ],
       "commandPalette": [
@@ -761,6 +793,18 @@
         {
           "command": "dendro.repo.searchAuthor",
           "when": "false"
+        },
+        {
+          "command": "dendro.compareRefs",
+          "when": "false"
+        },
+        {
+          "command": "dendro.compareRefWithCurrent",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.compare",
+          "when": "false"
         }
       ],
       "view/item/context": [
@@ -878,6 +922,11 @@
           "command": "dendro.repo.searchAuthor",
           "group": "inline@1",
           "when": "viewItem == dendro.contributor"
+        },
+        {
+          "command": "dendro.repo.compare",
+          "group": "2_integrate@3",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         }
       ],
       "explorer/context": [
@@ -1676,7 +1725,7 @@
   "scripts": {
     "build": "npm run sync-config && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare",
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",

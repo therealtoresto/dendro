@@ -286,6 +286,11 @@ export class RepositoryViews implements vscode.Disposable {
         this.withActions(node, (tools, ref) => tools.actions.rebaseCurrentOnto(ref.name, ref.name, tools.repo.state.HEAD?.name ?? null)),
       ),
       register('dendro.repo.rename', (node) => this.withActions(node, (tools, ref) => tools.actions.renameBranch(ref))),
+      register('dendro.repo.compare', (node) =>
+        this.withActions(node, async (tools, ref) => {
+          await vscode.commands.executeCommand('dendro.compareRefs', tools.repo.rootUri.fsPath, tools.repo.state.HEAD?.name ?? 'HEAD', ref.name);
+        }),
+      ),
       register('dendro.repo.delete', (node) => this.withActions(node, (tools, ref) => tools.actions.deleteRef(ref))),
       register('dendro.repo.push', (node) => this.withActions(node, (tools, ref) => tools.actions.pushBranch(ref))),
       register('dendro.repo.fetchRemote', async (node) => {
