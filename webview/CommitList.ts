@@ -79,6 +79,7 @@ interface ListHandlers {
 }
 
 const OVERSCAN_ROWS = 12;
+const OVERLAY_GAP = 4;
 
 export class CommitList {
   private readonly header: HTMLElement;
@@ -193,8 +194,9 @@ export class CommitList {
     return Math.max(1, Math.floor((this.scroller.clientHeight - this.inset) / this.rowHeight) - 1);
   }
 
+  // The overlay floats a few pixels below the top edge, so the rows start under its bottom edge plus a small gap.
   private updateInset(): void {
-    this.inset = this.overlay.offsetHeight;
+    this.inset = this.overlay.offsetTop + this.overlay.offsetHeight + OVERLAY_GAP;
     this.sizer.style.marginTop = `${this.inset}px`;
     this.queueRender();
   }
