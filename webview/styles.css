@@ -1695,3 +1695,29 @@ body.details-hidden .tool-details {
 .details-action:hover {
   background: var(--vscode-toolbar-hoverBackground);
 }
+
+/* Author names and full dates, when their columns are wide enough */
+
+/* Without avatars the name is all the cell has, so only the name beside an avatar comes and goes. */
+.cell.author .avatar + .author-name {
+  display: none;
+  flex: 1;
+}
+
+.list-rows.author-names .cell.author {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.list-rows.author-names .cell.author .avatar + .author-name {
+  display: block;
+}
+
+.date-long,
+.list-rows.long-dates .date-short {
+  display: none;
+}
+
+.list-rows.long-dates .date-long {
+  display: inline;
+}

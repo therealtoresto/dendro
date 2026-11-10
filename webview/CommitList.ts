@@ -17,14 +17,23 @@ export interface ListRow {
   stash?: StashInfo;
 }
 
+// A row's date both ways: the date and time when the column is wide enough, else the short age ("3h").
+export interface RowDate {
+  text: string;
+  long: string;
+  title: string;
+}
+
 export interface RowDisplay {
   columns: ColumnId[];
   badges: BadgeOptions;
   pillsInline: boolean;
   dimMerges: boolean;
   avatars: boolean;
-  formatDate(commit: CommitInfo): { text: string; title: string };
-  formatTime(unixSeconds: number): { text: string; title: string };
+  formatDate(commit: CommitInfo): RowDate;
+  formatTime(unixSeconds: number): RowDate;
+  // The longest date the date column may have to fit, to decide between dates and short ages.
+  longDateSample: string;
   formatDay(unixSeconds: number): string;
   getRowDate(commit: CommitInfo): number;
 }
@@ -71,6 +80,10 @@ interface ListHandlers {
 
 const OVERSCAN_ROWS = 12;
 const OVERLAY_GAP = 4;
+// An avatar, the gap after it and room for a few letters of a name.
+const AUTHOR_NAME_MIN_WIDTH = 84;
+// The cell's padding on both sides.
+const CELL_PADDING = 12;
 
 export class CommitList {
   private readonly header: HTMLElement;
@@ -85,6 +98,7 @@ export class CommitList {
   private model: ListModel | null = null;
   private headerColumns = '';
   private renderQueued = false;
+  private measuredDate = { key: '', width: 0 };
   private hoveredKey: string | null = null;
   private hoveredBadgeRow: string | null = null;
 
@@ -137,7 +151,10 @@ export class CommitList {
     this.attachDragAndDrop();
     this.rowsElement.addEventListener('dblclick', (event) => this.onRowDoubleClick(event));
     Columns.attachResize(this.header, (id) => this.readColumnWidth(id), {
-      onResize: (id, width) => handlers.onResizeColumn(id, width),
+      onResize: (id, width) => {
+        handlers.onResizeColumn(id, width);
+        this.queueRender();
+      },
       onReset: (id) => handlers.onResetColumn(id),
     });
   }
@@ -196,6 +213,32 @@ export class CommitList {
     return this.header.querySelector<HTMLElement>(`.cell.${id}`)?.getBoundingClientRect().width ?? 0;
   }
 
+  // Names next to the avatars, and dates instead of ages, only when the column is wide enough for them; every row
+  // follows the same choice so the column reads evenly.
+  private updateCellModes(display: RowDisplay): void {
+    const showNames = display.avatars && this.readColumnWidth('author') >= AUTHOR_NAME_MIN_WIDTH;
+    this.rowsElement.classList.toggle('author-names', showNames);
+    this.rowsElement.classList.toggle('long-dates', this.readColumnWidth('date') >= this.measureLongDate(display.longDateSample) + CELL_PADDING);
+  }
+
+  private measureLongDate(sample: string): number {
+    const font = getComputedStyle(this.rowsElement).font;
+    const key = `${font}|${sample}`;
+    if (this.measuredDate.key !== key) {
+      const context = document.createElement('canvas').getContext('2d')!;
+      context.font = font;
+      this.measuredDate = { key, width: Math.ceil(context.measureText(sample).width) };
+    }
+    return this.measuredDate.width;
+  }
+
+  private static renderDate(date: RowDate): string {
+    return (
+      `<span title="${Format.escapeHtml(date.title)}"><span class="date-long">${Format.escapeHtml(date.long)}</span>` +
+      `<span class="date-short">${Format.escapeHtml(date.text)}</span></span>`
+    );
+  }
+
   private queueRender(): void {
     if (this.renderQueued) {
       return;
@@ -218,6 +261,7 @@ export class CommitList {
     const first = Math.max(0, firstOnScreen - OVERSCAN_ROWS);
     const last = Math.min(model.rows.length, firstOnScreen + visibleCount + OVERSCAN_ROWS);
 
+    this.updateCellModes(model.display);
     let html = '';
     for (let index = first; index < last; index++) {
       html += this.renderRow(model, index);
@@ -307,7 +351,7 @@ export class CommitList {
       message: `<span class="subject stash-subject">${Format.highlight(stash.message, model.searchQuery)}</span>`,
       author: '',
       changes: '',
-      date: `<span title="${Format.escapeHtml(date.title)}">${Format.escapeHtml(date.text)}</span>`,
+      date: CommitList.renderDate(date),
       sha: stash.hash.slice(0, 7),
     };
     const context = Format.escapeHtml(
@@ -373,7 +417,7 @@ export class CommitList {
       message: `${inlineBadges}<span class="subject">${Format.highlight(commit.subject, model.searchQuery)}</span>${body}`,
       author: CommitList.renderAuthor(commit, display.avatars, model.avatars.get(commit.email.toLowerCase())),
       changes: CommitList.renderChanges(model.statsByHash.get(commit.hash), model.largestChange),
-      date: `<span title="${Format.escapeHtml(date.title)}">${Format.escapeHtml(date.text)}</span>`,
+      date: CommitList.renderDate(date),
       sha: commit.hash.slice(0, 7),
     };
   }
@@ -388,7 +432,8 @@ export class CommitList {
     const image = picture ? `<img class="avatar-image" src="${picture}" alt="">` : '';
     return (
       `<span class="avatar" style="background:${AvatarStyle.getColor(commit.email)}" title="${title}">` +
-      `${Format.escapeHtml(AvatarStyle.getInitials(commit.author))}${image}</span>`
+      `${Format.escapeHtml(AvatarStyle.getInitials(commit.author))}${image}</span>` +
+      `<span class="author-name" title="${title}">${Format.escapeHtml(commit.author)}</span>`
     );
   }
 

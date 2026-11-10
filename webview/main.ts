@@ -12,7 +12,7 @@ import {
 import { DateFormatter } from '../src/shared/DateFormatter';
 import type { SettingValues } from '../src/shared/SettingsCatalog';
 import { ColumnId, Columns, ColumnWidths, COLUMN_SPECS } from './Columns';
-import { CommitList, ListModel, ListRow, RowDisplay } from './CommitList';
+import { CommitList, ListModel, ListRow, RowDate, RowDisplay } from './CommitList';
 import { Markers } from './Markers';
 import { DetailsPanel } from './DetailsPanel';
 import { GraphLayout, GraphLayoutResult, LayoutInput } from './GraphLayout';
@@ -482,12 +482,19 @@ class GraphApp {
       dimMerges: settings['graph.dimMergeCommits'] === true,
       avatars: settings['graph.avatars'] !== false,
       getRowDate: (commit) => (useCommitDate ? commit.commitDate : commit.date),
-      formatDate: (commit) => {
-        const date = useCommitDate ? commit.commitDate : commit.date;
-        return { text: dates.formatCompact(date), title: dates.formatFull(date) };
-      },
-      formatTime: (unixSeconds) => ({ text: dates.formatCompact(unixSeconds), title: dates.formatFull(unixSeconds) }),
+      formatDate: (commit) => GraphApp.formatRowDate(dates, useCommitDate ? commit.commitDate : commit.date),
+      formatTime: (unixSeconds) => GraphApp.formatRowDate(dates, unixSeconds),
+      // Two-digit day, month and hour: the widest a date in this format gets.
+      longDateSample: GraphApp.formatRowDate(dates, new Date(2026, 11, 28, 22, 58).getTime() / 1000).long,
       formatDay: (unixSeconds) => dates.formatShortDate(unixSeconds),
+    };
+  }
+
+  private static formatRowDate(dates: DateFormatter, unixSeconds: number): RowDate {
+    return {
+      text: dates.formatCompact(unixSeconds),
+      long: `${dates.formatShortDate(unixSeconds)} ${dates.formatTime(unixSeconds)}`,
+      title: dates.formatFull(unixSeconds),
     };
   }
 
