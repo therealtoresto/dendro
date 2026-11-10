@@ -2,7 +2,7 @@
   "name": "dendro",
   "displayName": "Dendro",
   "description": "Reads your git tree like tree rings: commit graph, pull / push, the changes and files of every commit.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "tarasbondaruk",
   "repository": {
     "type": "git",
