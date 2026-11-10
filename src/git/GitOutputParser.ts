@@ -1,4 +1,13 @@
-import type { ChangedFile, CommitInfo, CommitStats, FileStatus, RefInfo, WorkingDetails } from '../protocol';
+import type {
+  ChangedFile,
+  CommitInfo,
+  CommitStats,
+  FileStatus,
+  RefInfo,
+  StashInfo,
+  WorkingDetails,
+  WorktreeInfo,
+} from '../protocol';
 
 export const FIELD_SEPARATOR = '\x1f';
 export const RECORD_SEPARATOR = '\x1e';
@@ -114,6 +123,33 @@ export class GitOutputParser {
     }
 
     return entries;
+  }
+
+  // `stash list --format=%H%x1f%P%x1f%gd%x1f%gs%x1f%ct`: a stash is a commit on top of the commit it was made on.
+  static parseStashes(output: string): StashInfo[] {
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [hash, parents, ref, message, date] = line.split(FIELD_SEPARATOR);
+        return { hash, base: parents.split(' ')[0], ref, message, date: Number(date) };
+      });
+  }
+
+  // `worktree list --porcelain`: blocks of "worktree <path>", "HEAD <sha>", "branch <ref>" or "detached".
+  static parseWorktrees(output: string, currentRoot: string): WorktreeInfo[] {
+    const worktrees: WorktreeInfo[] = [];
+    for (const block of output.split('\n\n')) {
+      const lines = block.split('\n');
+      const path = lines.find((line) => line.startsWith('worktree '))?.slice('worktree '.length);
+      const hash = lines.find((line) => line.startsWith('HEAD '))?.slice('HEAD '.length);
+      if (!path || !hash) {
+        continue;
+      }
+      const branch = lines.find((line) => line.startsWith('branch '))?.slice('branch refs/heads/'.length) ?? null;
+      worktrees.push({ path, hash, branch, isCurrent: path === currentRoot });
+    }
+    return worktrees;
   }
 
   static parseRefs(output: string): RefInfo[] {

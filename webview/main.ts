@@ -1,6 +1,8 @@
 import {
   CommitHoverInfo,
   CommitInfo,
+  StashInfo,
+  WorktreeInfo,
   CommitStats,
   GraphState,
   HostMessage,
@@ -44,6 +46,8 @@ class GraphApp {
   private avatars = new Map<string, string>();
   private incoming = new Set<string>();
   private branchHighlight: Set<string> | null = null;
+  private stashes: StashInfo[] = [];
+  private worktrees: WorktreeInfo[] = [];
   private hoverInfos = new Map<string, CommitHoverInfo>();
   private hoverTimer: number | undefined;
   private readonly hoverCard = new HoverCard();
@@ -94,6 +98,8 @@ class GraphApp {
       onRowHover: (key, row, pointerX) => this.onRowHover(key, row, pointerX),
       onRowLeave: () => this.onRowLeave(),
       onBadgeHover: (hash) => this.highlightBranch(hash),
+      onRowAction: (action, hash) => HostBridge.post({ type: 'commitAction', action, hash }),
+      onDropRef: (name, kind, targetKey) => this.dropRef(name, kind, targetKey),
       onScroll: () => this.hideHover(),
     });
     this.details = new DetailsPanel(root.querySelector('.details')!, {
@@ -116,6 +122,12 @@ class GraphApp {
       case 'refs':
         this.onRefs(message.refs);
         return;
+      case 'extras':
+        this.stashes = message.stashes;
+        this.worktrees = message.worktrees;
+        this.indexRefs();
+        this.rebuildRows();
+        return;
       case 'commits':
         this.onCommits(message.commits, message.append, message.hasMore);
         return;
@@ -133,7 +145,7 @@ class GraphApp {
         this.toolbar.showRemoteResult(message.action, message.ok, message.message);
         return;
       case 'commitDetails':
-        if (message.details.hash === this.selectedKey) {
+        if (message.details.hash === this.getSelectedHash()) {
           const laneColor = this.getLaneColor(message.details.hash);
           const refs = this.refsByHash.get(message.details.hash) ?? [];
           const avatar = this.avatars.get(message.details.email.toLowerCase());
@@ -224,7 +236,17 @@ class GraphApp {
     const showTags = this.settings['graph.showTags'] !== false;
     this.refsByHash = new Map();
 
-    for (const ref of this.refs) {
+    // Other worktrees show as badges on the commit they have checked out.
+    const worktreeRefs: RefInfo[] = this.worktrees
+      .filter((worktree) => !worktree.isCurrent)
+      .map((worktree) => ({
+        name: worktree.path.split(/[\\/]/).pop() ?? worktree.path,
+        kind: 'worktree',
+        hash: worktree.hash,
+        path: worktree.path,
+      }));
+
+    for (const ref of [...this.refs, ...worktreeRefs]) {
       if ((ref.kind === 'remote' && !showRemotes) || (ref.kind === 'tag' && !showTags)) {
         continue;
       }
@@ -248,7 +270,7 @@ class GraphApp {
   // A card already open follows the pointer to the next row at once; the first one waits for the hover delay.
   private onRowHover(key: string, row: DOMRect, pointerX: number): void {
     window.clearTimeout(this.hoverTimer);
-    if (this.settings['graph.rowHover.enabled'] === false || key === WORKING_CHANGES_KEY) {
+    if (this.settings['graph.rowHover.enabled'] === false || key === WORKING_CHANGES_KEY || key.startsWith('stash:')) {
       this.hoverCard.scheduleHide();
       return;
     }
@@ -349,7 +371,19 @@ class GraphApp {
       rows.push({ key: WORKING_CHANGES_KEY, commit: null });
       inputs.push({ hash: WORKING_CHANGES_KEY, parents: state.head.hash ? [state.head.hash] : [], dashed: true });
     }
+    // A stash sits right above the commit it was made on, tied to it by a dashed line.
+    const stashesByBase = new Map<string, StashInfo[]>();
+    for (const stash of this.stashes) {
+      const list = stashesByBase.get(stash.base) ?? [];
+      list.push(stash);
+      stashesByBase.set(stash.base, list);
+    }
+
     for (const commit of this.commits) {
+      for (const stash of stashesByBase.get(commit.hash) ?? []) {
+        rows.push({ key: `stash:${stash.hash}`, commit: null, stash });
+        inputs.push({ hash: `stash:${stash.hash}`, parents: [commit.hash], dashed: true });
+      }
       rows.push({ key: commit.hash, commit });
       inputs.push({ hash: commit.hash, parents: commit.parents });
     }
@@ -442,6 +476,7 @@ class GraphApp {
         const date = useCommitDate ? commit.commitDate : commit.date;
         return { text: dates.formatCompact(date), title: dates.formatFull(date) };
       },
+      formatTime: (unixSeconds) => ({ text: dates.formatCompact(unixSeconds), title: dates.formatFull(unixSeconds) }),
       formatDay: (unixSeconds) => dates.formatShortDate(unixSeconds),
     };
   }
@@ -479,6 +514,7 @@ class GraphApp {
       compare &&
       this.settings['graph.multiSelect'] !== false &&
       key !== WORKING_CHANGES_KEY &&
+      !key.startsWith('stash:') &&
       this.selectedKey !== null &&
       this.selectedKey !== WORKING_CHANGES_KEY &&
       key !== this.selectedKey;
@@ -518,7 +554,7 @@ class GraphApp {
     if (key === WORKING_CHANGES_KEY) {
       HostBridge.post({ type: 'showWorkingChanges' });
     } else {
-      HostBridge.post({ type: 'showCommit', hash: key });
+      HostBridge.post({ type: 'showCommit', hash: this.getSelectedHash()! });
     }
   }
 
@@ -720,6 +756,18 @@ class GraphApp {
 
     this.branchHighlight = reachable;
     this.renderList();
+  }
+
+  // A stash row's key carries a prefix; its details are those of the stash commit.
+  private getSelectedHash(): string | null {
+    return this.selectedKey?.startsWith('stash:') ? this.selectedKey.slice('stash:'.length) : this.selectedKey;
+  }
+
+  private dropRef(name: string, kind: RefInfo['kind'], targetKey: string): void {
+    const ref = this.refs.find((candidate) => candidate.name === name && candidate.kind === kind);
+    if (ref && !targetKey.startsWith('stash:') && targetKey !== WORKING_CHANGES_KEY) {
+      HostBridge.post({ type: 'dropRef', ref, targetHash: targetKey });
+    }
   }
 
   private getSelectedLaneColor(): number | null {

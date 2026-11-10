@@ -9,7 +9,8 @@ import { BlameHovers } from './editor/BlameHovers';
 import { AnnotationKind, FileAnnotations } from './editor/FileAnnotations';
 import { LineBlame } from './editor/LineBlame';
 import type { GitExtension } from './git/git';
-import { CommitAction, GraphController, MenuContext } from './GraphController';
+import { GraphController, MenuContext, RefAction, StashAction } from './GraphController';
+import type { CommitAction } from './protocol';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
@@ -25,6 +26,26 @@ const COMMIT_COMMANDS: Record<string, CommitAction> = {
   'dendro.cherryPick': 'cherryPick',
   'dendro.revert': 'revert',
   'dendro.reset': 'reset',
+  'dendro.createTag': 'createTag',
+  'dendro.mergeIntoCurrent': 'mergeIntoCurrent',
+  'dendro.rebaseCurrentOnto': 'rebaseCurrentOnto',
+};
+
+const REF_COMMANDS: Record<string, RefAction> = {
+  'dendro.checkoutRef': 'checkout',
+  'dendro.copyRefName': 'copyName',
+  'dendro.deleteRef': 'delete',
+  'dendro.renameBranch': 'rename',
+  'dendro.pushBranch': 'push',
+  'dendro.mergeRefIntoCurrent': 'merge',
+  'dendro.rebaseCurrentOntoRef': 'rebase',
+  'dendro.openWorktree': 'openWorktree',
+};
+
+const STASH_COMMANDS: Record<string, StashAction> = {
+  'dendro.stashApply': 'apply',
+  'dendro.stashPop': 'pop',
+  'dendro.stashDrop': 'drop',
 };
 
 const ANNOTATION_COMMANDS: Record<string, AnnotationKind> = {
@@ -122,18 +143,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dendro.showFileHistoryChart', (uri?: vscode.Uri) =>
       FileHistoryChart.show(context, blame, uri),
     ),
-    vscode.commands.registerCommand('dendro.checkoutRef', (menu: MenuContext) =>
-      GraphController.findByViewId(menu?.webview)?.runRefAction('checkout', menu),
-    ),
-    vscode.commands.registerCommand('dendro.copyRefName', (menu: MenuContext) =>
-      GraphController.findByViewId(menu?.webview)?.runRefAction('copyName', menu),
-    ),
   );
 
   for (const [command, action] of Object.entries(COMMIT_COMMANDS)) {
     subscriptions.push(
       vscode.commands.registerCommand(command, (menu: MenuContext) =>
         GraphController.findByViewId(menu?.webview)?.runCommitAction(action, menu),
+      ),
+    );
+  }
+  for (const [command, action] of Object.entries(REF_COMMANDS)) {
+    subscriptions.push(
+      vscode.commands.registerCommand(command, (menu: MenuContext) =>
+        GraphController.findByViewId(menu?.webview)?.runRefAction(action, menu),
+      ),
+    );
+  }
+  for (const [command, action] of Object.entries(STASH_COMMANDS)) {
+    subscriptions.push(
+      vscode.commands.registerCommand(command, (menu: MenuContext) =>
+        GraphController.findByViewId(menu?.webview)?.runStashAction(action, menu),
       ),
     );
   }

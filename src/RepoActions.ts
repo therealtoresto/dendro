@@ -140,6 +140,147 @@ export class RepoActions {
     await this.runLocal(['reset', `--${picked.mode}`, target.hash], `Reset to ${RepoActions.shortHash(target.hash)}`);
   }
 
+  async createTag(target: CommitTarget): Promise<void> {
+    const name = await vscode.window.showInputBox({
+      title: `Tag ${RepoActions.shortHash(target.hash)}`,
+      prompt: target.subject,
+      placeHolder: 'Tag name, e.g. v1.4.0',
+      validateInput: async (value) =>
+        value.trim() && (await this.git.isValidRefName(`refs/tags/${value.trim()}`)) ? null : 'Not a valid tag name',
+    });
+    if (!name) {
+      return;
+    }
+    const message = await vscode.window.showInputBox({
+      title: `Message for ${name.trim()}`,
+      prompt: 'With a message the tag is annotated; leave it empty for a plain tag.',
+    });
+    if (message === undefined) {
+      return;
+    }
+    const args = message.trim()
+      ? ['tag', '-a', name.trim(), '-m', message.trim(), target.hash]
+      : ['tag', name.trim(), target.hash];
+    await this.runLocal(args, `Tagged ${RepoActions.shortHash(target.hash)} as ${name.trim()}`);
+  }
+
+  async mergeIntoCurrent(source: string, current: string | null): Promise<void> {
+    if (!current) {
+      void vscode.window.showWarningMessage('Dendro: HEAD is detached. Check out a branch to merge into it.');
+      return;
+    }
+    const choice = await vscode.window.showWarningMessage(
+      `Merge ${source} into ${current}?`,
+      { modal: true, detail: 'With "Merge" git fast-forwards when it can; the other button always makes a merge commit.' },
+      'Merge',
+      'Merge with a merge commit',
+    );
+    if (!choice) {
+      return;
+    }
+    const args = choice === 'Merge' ? ['merge', source] : ['merge', '--no-ff', source];
+    await this.runLocal(args, `Merged ${source} into ${current}`);
+  }
+
+  async rebaseCurrentOnto(target: string, label: string, current: string | null): Promise<void> {
+    if (!current) {
+      void vscode.window.showWarningMessage('Dendro: HEAD is detached. Check out a branch to rebase it.');
+      return;
+    }
+    const confirmed = await RepoActions.confirm(
+      `Rebase ${current} onto ${label}?`,
+      `The commits of ${current} that ${label} does not have are replayed on top of it. Commits already pushed will need a force push.`,
+      'Rebase',
+    );
+    if (confirmed) {
+      await this.runLocal(['rebase', target], `Rebased ${current} onto ${label}`);
+    }
+  }
+
+  async deleteRef(ref: RefInfo): Promise<void> {
+    if (ref.kind === 'tag') {
+      if (await RepoActions.confirm(`Delete tag ${ref.name}?`, 'The tag is removed here; a pushed tag stays on the remote.', 'Delete')) {
+        await this.runLocal(['tag', '-d', ref.name], `Deleted tag ${ref.name}`);
+      }
+      return;
+    }
+
+    if (ref.kind === 'remote' && ref.remote) {
+      const branch = ref.name.slice(ref.remote.length + 1);
+      const confirmed = await RepoActions.confirm(
+        `Delete ${branch} from ${ref.remote}?`,
+        'The branch is removed from the remote for everyone who uses it.',
+        'Delete from remote',
+      );
+      if (confirmed) {
+        await this.runLocal(['push', ref.remote, '--delete', branch], `Deleted ${ref.name}`);
+      }
+      return;
+    }
+
+    if (!(await RepoActions.confirm(`Delete branch ${ref.name}?`, 'Only the local branch is deleted.', 'Delete'))) {
+      return;
+    }
+    const failure = await this.tryGit(['branch', '-d', ref.name]);
+    if (failure === null) {
+      vscode.window.setStatusBarMessage(`$(check) Dendro: Deleted ${ref.name}`, 3000);
+    } else if (/not fully merged/i.test(failure)) {
+      const force = await RepoActions.confirm(
+        `${ref.name} is not merged anywhere. Delete it anyway?`,
+        'Its commits that no other branch has will be lost.',
+        'Delete anyway',
+      );
+      if (force) {
+        await this.runLocal(['branch', '-D', ref.name], `Deleted ${ref.name}`);
+      }
+    } else {
+      void vscode.window.showErrorMessage(`Dendro: could not delete ${ref.name}. ${RepoActions.firstLine(failure)}`);
+    }
+    this.onChanged();
+  }
+
+  async renameBranch(ref: RefInfo): Promise<void> {
+    const name = await vscode.window.showInputBox({
+      title: `Rename ${ref.name}`,
+      value: ref.name,
+      validateInput: async (value) => (value.trim() && (await this.git.isValidBranchName(value.trim())) ? null : 'Not a valid branch name'),
+    });
+    if (name && name.trim() !== ref.name) {
+      await this.runLocal(['branch', '-m', ref.name, name.trim()], `Renamed ${ref.name} to ${name.trim()}`);
+    }
+  }
+
+  async pushBranch(ref: RefInfo): Promise<void> {
+    if (ref.upstream) {
+      const [remote] = ref.upstream.split('/');
+      await this.runRemoteTask('push', `Pushing ${ref.name}`, () => this.repo.push(remote, ref.name));
+      return;
+    }
+    const remote = await this.pickRemote();
+    if (remote) {
+      await this.runRemoteTask('push', `Publishing ${ref.name}`, () => this.repo.push(remote, ref.name, true));
+    }
+  }
+
+  async runStash(action: 'apply' | 'pop' | 'drop', stashRef: string, message: string): Promise<void> {
+    if (action === 'drop' && !(await RepoActions.confirm(`Drop ${stashRef}?`, `"${message}" will be lost.`, 'Drop'))) {
+      return;
+    }
+    const done: Record<typeof action, string> = { apply: 'Applied', pop: 'Popped', drop: 'Dropped' };
+    await this.runLocal(['stash', action, stashRef], `${done[action]} ${stashRef}`);
+  }
+
+  private async tryGit(args: string[]): Promise<string | null> {
+    try {
+      await this.git.run(args);
+      return null;
+    } catch (error) {
+      return RepoActions.readErrorMessage(error);
+    } finally {
+      await this.repo.status().catch(() => undefined);
+    }
+  }
+
   private async push(): Promise<void> {
     const head = this.repo.state.HEAD;
     if (!head?.name) {

@@ -8,6 +8,7 @@ import { RemoteUrl } from './git/RemoteUrl';
 import { FileChange, WorkingChangeCounter } from './git/WorkingChangeCounter';
 import type {
   ChangedFile,
+  CommitAction,
   CommitHoverInfo,
   CommitInfo,
   CommitStats,
@@ -17,6 +18,7 @@ import type {
   WorkingSummary,
   RefInfo,
   RemoteSummary,
+  StashInfo,
   WebviewMessage,
 } from './protocol';
 import { RepoActions } from './RepoActions';
@@ -49,9 +51,12 @@ export interface MenuContext {
   hash?: string;
   refName?: string;
   refKind?: RefInfo['kind'];
+  refPath?: string;
+  stashRef?: string;
 }
 
-export type CommitAction = 'copySha' | 'copyMessage' | 'checkout' | 'createBranch' | 'cherryPick' | 'revert' | 'reset';
+export type RefAction = 'checkout' | 'copyName' | 'delete' | 'rename' | 'push' | 'merge' | 'rebase' | 'openWorktree';
+export type StashAction = 'apply' | 'pop' | 'drop';
 
 export interface GraphServices {
   avatars: AvatarService;
@@ -74,6 +79,7 @@ export class GraphController {
   private actions: RepoActions | undefined;
   private head: HeadInfo = EMPTY_HEAD;
   private refs: RefInfo[] = [];
+  private stashes: StashInfo[] = [];
   private commitsByHash = new Map<string, CommitInfo>();
   private statsByHash = new Map<string, CommitStats>();
   private loadedCount = 0;
@@ -207,20 +213,102 @@ export class GraphController {
       case 'reset':
         await this.actions.reset(target, this.head.branch);
         break;
+      case 'createTag':
+        await this.actions.createTag(target);
+        break;
+      case 'mergeIntoCurrent':
+        await this.actions.mergeIntoCurrent(this.describeCommit(commit.hash), this.head.branch);
+        break;
+      case 'rebaseCurrentOnto':
+        await this.actions.rebaseCurrentOnto(commit.hash, this.describeCommit(commit.hash), this.head.branch);
+        break;
     }
   }
 
-  async runRefAction(action: 'checkout' | 'copyName', context: MenuContext): Promise<void> {
-    const ref = this.refs.find((candidate) => candidate.name === context.refName && candidate.kind === context.refKind);
-    if (!ref) {
+  // A commit by the branch that points at it when there is one, else its short SHA.
+  private describeCommit(hash: string): string {
+    const ref = this.refs.find((candidate) => candidate.hash === hash && candidate.kind === 'head') ??
+      this.refs.find((candidate) => candidate.hash === hash && candidate.kind === 'remote');
+    return ref?.name ?? RepoActions.shortHash(hash);
+  }
+
+  async runStashAction(action: StashAction, context: MenuContext): Promise<void> {
+    const stash = this.stashes.find((candidate) => candidate.ref === context.stashRef);
+    if (stash && this.actions) {
+      await this.actions.runStash(action, stash.ref, stash.message);
+    }
+  }
+
+  async runRefAction(action: RefAction, context: MenuContext): Promise<void> {
+    if (action === 'openWorktree') {
+      if (context.refPath) {
+        await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(context.refPath), { forceNewWindow: true });
+      }
       return;
     }
 
-    if (action === 'copyName') {
-      await vscode.env.clipboard.writeText(ref.name);
+    const ref = this.refs.find((candidate) => candidate.name === context.refName && candidate.kind === context.refKind);
+    if (!ref || !this.actions) {
       return;
     }
-    await this.actions?.checkoutRef(ref);
+
+    switch (action) {
+      case 'copyName':
+        await vscode.env.clipboard.writeText(ref.name);
+        return;
+      case 'checkout':
+        await this.actions.checkoutRef(ref);
+        return;
+      case 'delete':
+        await this.actions.deleteRef(ref);
+        return;
+      case 'rename':
+        await this.actions.renameBranch(ref);
+        return;
+      case 'push':
+        await this.actions.pushBranch(ref);
+        return;
+      case 'merge':
+        await this.actions.mergeIntoCurrent(ref.name, this.head.branch);
+        return;
+      case 'rebase':
+        await this.actions.rebaseCurrentOnto(ref.name, ref.name, this.head.branch);
+        return;
+    }
+  }
+
+  // A branch badge dropped on a commit: the actions that make sense keep the current branch checked out.
+  private async dropRef(source: RefInfo, targetHash: string): Promise<void> {
+    const current = this.head.branch;
+    if (!this.actions || !current) {
+      void vscode.window.showInformationMessage('Dendro: check out a branch first; dropping merges into it or rebases it.');
+      return;
+    }
+
+    const target = this.describeCommit(targetHash);
+    const isCurrentSource = source.kind === 'head' && source.name === current;
+    const isHeadTarget = targetHash === this.head.hash;
+    const choices: (vscode.QuickPickItem & { run: () => Promise<void> })[] = [];
+
+    if (isHeadTarget && !isCurrentSource) {
+      choices.push(
+        { label: `$(git-merge) Merge ${source.name} into ${current}`, run: () => this.actions!.mergeIntoCurrent(source.name, current) },
+        { label: `$(git-compare) Rebase ${current} onto ${source.name}`, run: () => this.actions!.rebaseCurrentOnto(source.name, source.name, current) },
+      );
+    } else if (isCurrentSource && !isHeadTarget) {
+      choices.push(
+        { label: `$(git-compare) Rebase ${current} onto ${target}`, run: () => this.actions!.rebaseCurrentOnto(targetHash, target, current) },
+        { label: `$(git-merge) Merge ${target} into ${current}`, run: () => this.actions!.mergeIntoCurrent(targetHash, current) },
+      );
+    } else if (!isCurrentSource) {
+      choices.push({ label: `$(git-merge) Merge ${source.name} into ${current}`, run: () => this.actions!.mergeIntoCurrent(source.name, current) });
+    }
+
+    if (choices.length === 0) {
+      return;
+    }
+    const picked = await vscode.window.showQuickPick(choices, { title: `Dropped ${source.name} on ${target}` });
+    await picked?.run();
   }
 
   private disposeRepoListeners(): void {
@@ -322,12 +410,18 @@ export class GraphController {
       return;
     }
 
-    const [head, refs] = await Promise.all([git.getHead(), git.getRefs()]);
+    const [head, refs, stashes, worktrees] = await Promise.all([
+      git.getHead(),
+      git.getRefs(),
+      git.getStashes(),
+      git.getWorktrees(),
+    ]);
     if (git !== this.git) {
       return;
     }
     this.head = head;
     this.refs = refs;
+    this.stashes = stashes;
     const [lastFetch, working, incoming, remote] = await Promise.all([
       git.getLastFetchTime(),
       this.summarizeWorkingChanges(git),
@@ -337,10 +431,15 @@ export class GraphController {
     this.postState(lastFetch, working, incoming, remote);
 
     // A repository can carry thousands of tags; they cross to the webview only when one of them moved.
-    const refsSignature = refs.map((ref) => `${ref.kind}${ref.name}${ref.hash}${ref.ahead ?? ''}${ref.behind ?? ''}`).join('\n');
+    const refsSignature = [
+      ...refs.map((ref) => `${ref.kind}${ref.name}${ref.hash}${ref.ahead ?? ''}${ref.behind ?? ''}`),
+      ...stashes.map((stash) => `stash${stash.ref}${stash.hash}`),
+      ...worktrees.map((worktree) => `worktree${worktree.path}${worktree.hash}`),
+    ].join('\n');
     if (refsSignature !== this.refsSignature) {
       this.refsSignature = refsSignature;
       this.post({ type: 'refs', refs });
+      this.post({ type: 'extras', stashes, worktrees });
     }
 
     const commitSettings = [...COMMIT_SETTINGS, ...AVATAR_SETTINGS].map((key) => Settings.get(key));
@@ -626,6 +725,12 @@ export class GraphController {
         return;
       case 'hoverCommit':
         await this.showHoverInfo(message.hash);
+        return;
+      case 'commitAction':
+        await this.runCommitAction(message.action, { hash: message.hash });
+        return;
+      case 'dropRef':
+        await this.dropRef(message.ref, message.targetHash);
         return;
       case 'refresh':
         await this.repo?.status().catch(() => undefined);

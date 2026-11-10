@@ -195,6 +195,66 @@
         "title": "Show Visual File History",
         "category": "Dendro",
         "icon": "$(graph-line)"
+      },
+      {
+        "command": "dendro.createTag",
+        "title": "Create Tag Here…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.mergeIntoCurrent",
+        "title": "Merge into Current Branch",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.rebaseCurrentOnto",
+        "title": "Rebase Current Branch onto This Commit",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.deleteRef",
+        "title": "Delete…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.renameBranch",
+        "title": "Rename Branch…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.pushBranch",
+        "title": "Push Branch",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.mergeRefIntoCurrent",
+        "title": "Merge into Current Branch",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.rebaseCurrentOntoRef",
+        "title": "Rebase Current Branch onto This",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.openWorktree",
+        "title": "Open Worktree in New Window",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.stashApply",
+        "title": "Apply Stash",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.stashPop",
+        "title": "Pop Stash",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.stashDrop",
+        "title": "Drop Stash…",
+        "category": "Dendro"
       }
     ],
     "menus": {
@@ -244,12 +304,72 @@
         {
           "command": "dendro.checkoutRef",
           "group": "1_ref@1",
-          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref'"
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
         },
         {
           "command": "dendro.copyRefName",
           "group": "1_ref@2",
-          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref'"
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
+        },
+        {
+          "command": "dendro.createTag",
+          "group": "2_branch@3",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.mergeIntoCurrent",
+          "group": "4_integrate@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.rebaseCurrentOnto",
+          "group": "4_integrate@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.pushBranch",
+          "group": "1_ref@3",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind == 'head'"
+        },
+        {
+          "command": "dendro.renameBranch",
+          "group": "1_ref@4",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind == 'head'"
+        },
+        {
+          "command": "dendro.mergeRefIntoCurrent",
+          "group": "2_integrate@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && (refKind == 'head' || refKind == 'remote')"
+        },
+        {
+          "command": "dendro.rebaseCurrentOntoRef",
+          "group": "2_integrate@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
+        },
+        {
+          "command": "dendro.deleteRef",
+          "group": "9_delete@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
+        },
+        {
+          "command": "dendro.openWorktree",
+          "group": "1_ref@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind == 'worktree'"
+        },
+        {
+          "command": "dendro.stashApply",
+          "group": "1_stash@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'stash'"
+        },
+        {
+          "command": "dendro.stashPop",
+          "group": "1_stash@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'stash'"
+        },
+        {
+          "command": "dendro.stashDrop",
+          "group": "9_delete@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'stash'"
         }
       ],
       "editor/title": [
@@ -385,6 +505,54 @@
         },
         {
           "command": "dendro.history.loadMore",
+          "when": "false"
+        },
+        {
+          "command": "dendro.createTag",
+          "when": "false"
+        },
+        {
+          "command": "dendro.mergeIntoCurrent",
+          "when": "false"
+        },
+        {
+          "command": "dendro.rebaseCurrentOnto",
+          "when": "false"
+        },
+        {
+          "command": "dendro.deleteRef",
+          "when": "false"
+        },
+        {
+          "command": "dendro.renameBranch",
+          "when": "false"
+        },
+        {
+          "command": "dendro.pushBranch",
+          "when": "false"
+        },
+        {
+          "command": "dendro.mergeRefIntoCurrent",
+          "when": "false"
+        },
+        {
+          "command": "dendro.rebaseCurrentOntoRef",
+          "when": "false"
+        },
+        {
+          "command": "dendro.openWorktree",
+          "when": "false"
+        },
+        {
+          "command": "dendro.stashApply",
+          "when": "false"
+        },
+        {
+          "command": "dendro.stashPop",
+          "when": "false"
+        },
+        {
+          "command": "dendro.stashDrop",
           "when": "false"
         }
       ],

@@ -16,7 +16,7 @@ const PALETTE = [
   '#6366f1',
 ];
 
-export type NodeStyle = 'commit' | 'merge' | 'head' | 'working' | 'incoming';
+export type NodeStyle = 'commit' | 'merge' | 'head' | 'working' | 'incoming' | 'stash';
 
 export interface GraphMetrics {
   rowHeight: number;
@@ -77,7 +77,7 @@ export class GraphRenderer {
     }
 
     const x = GraphRenderer.getLaneX(layout.lane, metrics);
-    const usePicture = metrics.avatarNodes && picture && nodeStyle !== 'merge' && nodeStyle !== 'working';
+    const usePicture = metrics.avatarNodes && picture && nodeStyle !== 'merge' && nodeStyle !== 'working' && nodeStyle !== 'stash';
     const svgNode = usePicture ? '' : GraphRenderer.renderNode(x, middle, layout.color, nodeStyle, metrics);
     const strokeWidth = metrics.avatarNodes ? 2.4 : 2;
     const svg =
@@ -118,6 +118,15 @@ export class GraphRenderer {
           `<circle cx="${x}" cy="${y}" r="${big}" stroke="${color}" stroke-width="1.6" stroke-dasharray="3 1.6 0.8 1.6" class="node-hollow"/>` +
           `<circle cx="${x}" cy="${y}" r="${(big * 0.37).toFixed(1)}" fill="${color}" stroke="none"/>`
         );
+      // Work put aside: a dashed box.
+      case 'stash': {
+        const half = metrics.avatarNodes ? metrics.nodeRadius - 1.5 : 5;
+        return (
+          `<rect x="${x - half}" y="${y - half}" width="${half * 2}" height="${half * 2}" rx="3" stroke="${color}" ` +
+          `stroke-width="1.6" stroke-dasharray="3 1.6" class="node-hollow"/>` +
+          `<rect x="${x - half / 2.4}" y="${y - half / 2.4}" width="${half / 1.2}" height="${half / 1.2}" rx="1" fill="${color}" stroke="none"/>`
+        );
+      }
       // The checked-out commit: a dot inside a ring.
       case 'head':
         return (

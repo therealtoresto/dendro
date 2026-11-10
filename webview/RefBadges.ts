@@ -46,7 +46,7 @@ export class RefBadges {
       }
     }
     for (const ref of refs) {
-      if (ref.kind === 'tag') {
+      if (ref.kind === 'tag' || ref.kind === 'worktree') {
         badges.push({ ref, remotes: [], isCurrent: false });
       }
     }
@@ -83,6 +83,7 @@ export class RefBadges {
         webviewSection: 'ref',
         refName: ref.name,
         refKind: ref.kind,
+        refPath: ref.path,
         preventDefaultContextMenuItems: true,
       }),
     );
@@ -94,6 +95,8 @@ export class RefBadges {
       icon = Icons.render('cloud', 12);
     } else if (ref.kind === 'tag') {
       icon = Icons.render('tag', 12);
+    } else if (ref.kind === 'worktree') {
+      icon = Icons.render('folder', 12);
     }
 
     let label = ref.name;
@@ -118,10 +121,15 @@ export class RefBadges {
     if (ref.upstream) {
       tooltipLines.push(`tracks ${ref.upstream}: ${ref.ahead ?? 0} ahead, ${ref.behind ?? 0} behind`);
     }
+    if (ref.kind === 'worktree') {
+      tooltipLines.push(`worktree at ${ref.path}`);
+    }
     const classes = ['badge', `badge-${ref.kind}`, badge.isCurrent ? 'badge-current' : ''].join(' ');
+    // Branches can be dragged onto a commit to merge or rebase.
+    const draggable = ref.kind === 'head' || ref.kind === 'remote' ? ' draggable="true"' : '';
 
     return (
-      `<span class="${classes}" style="--lane:${color}" data-ref-name="${Format.escapeHtml(ref.name)}" ` +
+      `<span class="${classes}"${draggable} style="--lane:${color}" data-ref-name="${Format.escapeHtml(ref.name)}" ` +
       `data-ref-kind="${ref.kind}" data-vscode-context="${context}" title="${Format.escapeHtml(tooltipLines.join('\n'))}">` +
       `${icon}<span class="badge-name">${Format.escapeHtml(label)}</span>${remoteMark}${upstreamMark}</span>`
     );

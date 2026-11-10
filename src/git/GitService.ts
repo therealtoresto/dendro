@@ -8,7 +8,9 @@ import type {
   CommitStats,
   HeadInfo,
   RefInfo,
+  StashInfo,
   WorkingDetails,
+  WorktreeInfo,
 } from '../protocol';
 import { FIELD_SEPARATOR, GitOutputParser, HistoryEntry } from './GitOutputParser';
 
@@ -192,6 +194,16 @@ export class GitService {
     return output.split('\n').filter(Boolean);
   }
 
+  async getStashes(): Promise<StashInfo[]> {
+    const format = ['%H', '%P', '%gd', '%gs', '%ct'].join('%x1f');
+    return GitOutputParser.parseStashes(await this.run(['stash', 'list', `--format=${format}`]).catch(() => ''));
+  }
+
+  async getWorktrees(): Promise<WorktreeInfo[]> {
+    const output = await this.run(['worktree', 'list', '--porcelain']).catch(() => '');
+    return GitOutputParser.parseWorktrees(output, this.root);
+  }
+
   async getWorkingLineStats(): Promise<CommitStats> {
     return GitOutputParser.parseShortStatLine(await this.run(['diff', 'HEAD', '--shortstat']));
   }
@@ -284,6 +296,14 @@ export class GitService {
 
   async isValidBranchName(name: string): Promise<boolean> {
     return (await this.readOptional(['check-ref-format', '--branch', name])) !== null;
+  }
+
+  // `check-ref-format` answers with its exit code only.
+  isValidRefName(fullName: string): Promise<boolean> {
+    return this.run(['check-ref-format', fullName]).then(
+      () => true,
+      () => false,
+    );
   }
 
   async hasLocalBranch(name: string): Promise<boolean> {

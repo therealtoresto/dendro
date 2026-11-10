@@ -267,3 +267,88 @@
     transform: scale(0.92);
   }
 }
+
+/* Actions in the graph */
+
+@layer glass {
+  .row-actions {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    display: flex;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: var(--glass-radius-pill);
+    transform: translateY(-50%) translateX(6px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.16s var(--ease-out), transform 0.2s var(--ease-spring);
+  }
+
+  .row:hover .row-actions {
+    opacity: 1;
+    transform: translateY(-50%);
+    pointer-events: auto;
+  }
+
+  body.dragging-ref .row-actions {
+    display: none;
+  }
+
+  .row-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: var(--glass-radius-pill);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background-color 0.14s var(--ease-out), color 0.14s var(--ease-out), transform 0.14s var(--ease-spring);
+  }
+
+  .row-action:hover {
+    background: var(--glass-hover);
+    color: var(--fg);
+    transform: translateY(-1px);
+  }
+
+  .row-action:active {
+    transform: scale(0.9);
+  }
+
+  .badge[draggable='true'] {
+    cursor: grab;
+  }
+
+  body.dragging-ref,
+  body.dragging-ref * {
+    cursor: grabbing;
+  }
+
+  .row.drop-target {
+    background: var(--glass-sheen), color-mix(in srgb, var(--glass-accent) 22%, transparent);
+    box-shadow: 0 0 0 2px var(--glass-accent), 0 6px 18px color-mix(in srgb, var(--glass-accent) 30%, transparent);
+  }
+
+  .row.stash .stash-subject {
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .badge-stash {
+    border: 1px dashed var(--lane);
+    background: color-mix(in srgb, var(--lane) 14%, transparent);
+    color: var(--fg);
+    font-weight: 500;
+  }
+
+  .badge-worktree {
+    border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+    background: var(--glass-sheen), color-mix(in srgb, var(--fg) 10%, transparent);
+    color: var(--fg);
+  }
+}

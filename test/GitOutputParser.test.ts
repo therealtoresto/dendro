@@ -141,3 +141,27 @@ describe('GitOutputParser history with line counts', () => {
     );
   });
 });
+
+describe('GitOutputParser stashes and worktrees', () => {
+  it('reads stashes with the commit they were made on', () => {
+    const output = ['s1', 'b1 i1', 'stash@{0}', 'On master: try the cache', '1700000000'].join(F) + '\n';
+    assert.deepEqual(GitOutputParser.parseStashes(output), [
+      { hash: 's1', base: 'b1', ref: 'stash@{0}', message: 'On master: try the cache', date: 1700000000 },
+    ]);
+  });
+
+  it('reads worktrees, the current one marked, a detached one without a branch', () => {
+    const output = [
+      'worktree /repo\nHEAD aaa\nbranch refs/heads/main',
+      'worktree /repo-review\nHEAD bbb\nbranch refs/heads/feature/x',
+      'worktree /repo-old\nHEAD ccc\ndetached',
+      '',
+    ].join('\n\n');
+
+    assert.deepEqual(GitOutputParser.parseWorktrees(output, '/repo'), [
+      { path: '/repo', hash: 'aaa', branch: 'main', isCurrent: true },
+      { path: '/repo-review', hash: 'bbb', branch: 'feature/x', isCurrent: false },
+      { path: '/repo-old', hash: 'ccc', branch: null, isCurrent: false },
+    ]);
+  });
+});

@@ -21,7 +21,7 @@ export interface CommitStats {
   deletions: number;
 }
 
-export type RefKind = 'head' | 'remote' | 'tag';
+export type RefKind = 'head' | 'remote' | 'tag' | 'worktree';
 
 export interface RefInfo {
   name: string;
@@ -31,7 +31,35 @@ export interface RefInfo {
   upstream?: string;
   ahead?: number;
   behind?: number;
+  path?: string;
 }
+
+export interface StashInfo {
+  hash: string;
+  base: string;
+  ref: string;
+  message: string;
+  date: number;
+}
+
+export interface WorktreeInfo {
+  path: string;
+  hash: string;
+  branch: string | null;
+  isCurrent: boolean;
+}
+
+export type CommitAction =
+  | 'copySha'
+  | 'copyMessage'
+  | 'checkout'
+  | 'createBranch'
+  | 'cherryPick'
+  | 'revert'
+  | 'reset'
+  | 'createTag'
+  | 'mergeIntoCurrent'
+  | 'rebaseCurrentOnto';
 
 export interface HeadInfo {
   branch: string | null;
@@ -133,6 +161,8 @@ export type WebviewMessage =
   | { type: 'openSettings'; section?: string }
   | { type: 'showComparison'; base: string; target: string }
   | { type: 'hoverCommit'; hash: string }
+  | { type: 'commitAction'; action: CommitAction; hash: string }
+  | { type: 'dropRef'; ref: RefInfo; targetHash: string }
   | { type: 'showCommit'; hash: string }
   | { type: 'showWorkingChanges' }
   | { type: 'openCommitDiff'; hash: string; parent: string | null; file: ChangedFile }
@@ -146,6 +176,7 @@ export type WebviewMessage =
 export type HostMessage =
   | { type: 'state'; state: GraphState }
   | { type: 'refs'; refs: RefInfo[] }
+  | { type: 'extras'; stashes: StashInfo[]; worktrees: WorktreeInfo[] }
   | { type: 'commits'; commits: CommitInfo[]; append: boolean; hasMore: boolean }
   | { type: 'loading'; value: boolean }
   | { type: 'commitStats'; stats: Record<string, CommitStats> }

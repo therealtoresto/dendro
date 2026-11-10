@@ -26,6 +26,9 @@ const PATHS = {
   list: '<path d="M5.5 4h8.5M5.5 8h8.5M5.5 12h8.5M2.5 4h.01M2.5 8h.01M2.5 12h.01"/>',
   tree: '<path d="M3 3h5M3 3v9h4M3 7.5h4M10 7.5h4M10 12h4"/>',
   chevron: '<path d="M6 4l4 4-4 4"/>',
+  cherry: '<circle cx="5" cy="11.5" r="2.5"/><circle cx="11.5" cy="12" r="2.5"/><path d="M5 9c0-4 3-6.5 6-7M11.5 9.5C11 6 10 3.5 11 2"/>',
+  undo: '<path d="M4 7h6.5a3 3 0 0 1 0 6H8"/><path d="M6.5 4.5L4 7l2.5 2.5"/>',
+  box: '<rect x="2.5" y="4.5" width="11" height="9" rx="1.5"/><path d="M2.5 7.5h11M6.5 10h3"/>',
   rings:
     '<circle cx="8" cy="8" r="6.5"/><circle cx="8.2" cy="8" r="4.2"/><circle cx="8.3" cy="8" r="2"/>',
 } as const;

@@ -1,10 +1,10 @@
-import { CommitInfo, CommitStats, RefInfo, WORKING_CHANGES_KEY, WorkingSummary } from '../src/protocol';
+import { CommitAction, CommitInfo, CommitStats, RefInfo, StashInfo, WORKING_CHANGES_KEY, WorkingSummary } from '../src/protocol';
 import { ColumnId, Columns } from './Columns';
 import { AvatarStyle } from '../src/shared/AvatarStyle';
 import { Format } from './Format';
 import type { GraphLayoutResult } from './GraphLayout';
 import { GraphMetrics, GraphRenderer, NodeStyle } from './GraphRenderer';
-import { Icons } from './Icons';
+import { IconName, Icons } from './Icons';
 import type { RowMarker } from './Markers';
 import { Minimap } from './Minimap';
 import { BadgeOptions, RefBadges } from './RefBadges';
@@ -14,7 +14,16 @@ import { WorkingCounters } from './WorkingCounters';
 export interface ListRow {
   key: string;
   commit: CommitInfo | null;
+  stash?: StashInfo;
 }
+
+const ROW_ACTIONS: { action: CommitAction; icon: IconName; title: string }[] = [
+  { action: 'createBranch', icon: 'branch', title: 'Create a branch here' },
+  { action: 'createTag', icon: 'tag', title: 'Tag this commit' },
+  { action: 'cherryPick', icon: 'cherry', title: 'Cherry-pick onto the current branch' },
+  { action: 'revert', icon: 'undo', title: 'Revert this commit' },
+  { action: 'copySha', icon: 'copy', title: 'Copy the SHA' },
+];
 
 export interface RowDisplay {
   columns: ColumnId[];
@@ -23,6 +32,7 @@ export interface RowDisplay {
   dimMerges: boolean;
   avatars: boolean;
   formatDate(commit: CommitInfo): { text: string; title: string };
+  formatTime(unixSeconds: number): { text: string; title: string };
   formatDay(unixSeconds: number): string;
   getRowDate(commit: CommitInfo): number;
 }
@@ -62,6 +72,8 @@ interface ListHandlers {
   onResetColumn(id: ColumnId): void;
   onRowHover(key: string, row: DOMRect, pointerX: number): void;
   onBadgeHover(commitHash: string | null): void;
+  onRowAction(action: CommitAction, hash: string): void;
+  onDropRef(name: string, kind: RefInfo['kind'], targetKey: string): void;
   onRowLeave(): void;
   onScroll(): void;
 }
@@ -130,6 +142,7 @@ export class CommitList {
     });
     window.addEventListener('resize', () => this.queueRender());
     this.rowsElement.addEventListener('click', (event) => this.onRowClick(event));
+    this.attachDragAndDrop();
     this.rowsElement.addEventListener('dblclick', (event) => this.onRowDoubleClick(event));
     Columns.attachResize(this.header, (id) => this.readColumnWidth(id), {
       onResize: (id, width) => handlers.onResizeColumn(id, width),
@@ -257,6 +270,10 @@ export class CommitList {
       classes.push('branch-dim');
     }
 
+    if (row.stash) {
+      return this.renderStashRow(model, index, row.stash, classes);
+    }
+
     const cells = commit ? this.renderCommitCells(model, index, commit) : this.renderWorkingCells(model, index);
     const cellsHtml = model.display.columns.map((id) => `<div class="cell ${id}">${cells[id]}</div>`).join('');
     const laneColor = model.layout.rows[index].color;
@@ -284,9 +301,35 @@ export class CommitList {
     const context = Format.escapeHtml(
       JSON.stringify({ webviewSection: 'commit', hash: commit.hash, preventDefaultContextMenuItems: true }),
     );
+    const actions = ROW_ACTIONS.map(
+      (item) => `<button class="row-action" data-row-action="${item.action}" title="${item.title}">${Icons.render(item.icon, 13)}</button>`,
+    ).join('');
     return (
       `<div class="${classes.join(' ')}" ${top} data-key="${commit.hash}" data-vscode-context="${context}">` +
-      `${cellsHtml}</div>`
+      `${cellsHtml}<div class="row-actions glass-strong">${actions}</div></div>`
+    );
+  }
+
+  private renderStashRow(model: ListModel, index: number, stash: StashInfo, classes: string[]): string {
+    const layout = model.layout.rows[index];
+    const color = GraphRenderer.getColor(layout.color);
+    const date = model.display.formatTime(stash.date);
+    const cells: Record<ColumnId, string> = {
+      refs: `<span class="badge badge-stash" style="--lane:${color}">${Icons.render('box', 12)}<span class="badge-name">${Format.escapeHtml(stash.ref)}</span></span>`,
+      graph: GraphRenderer.renderRow(layout, model.graphWidth, 'stash', model.metrics),
+      message: `<span class="subject stash-subject">${Format.highlight(stash.message, model.searchQuery)}</span>`,
+      author: '',
+      changes: '',
+      date: `<span title="${Format.escapeHtml(date.title)}">${Format.escapeHtml(date.text)}</span>`,
+      sha: stash.hash.slice(0, 7),
+    };
+    const context = Format.escapeHtml(
+      JSON.stringify({ webviewSection: 'stash', stashRef: stash.ref, preventDefaultContextMenuItems: true }),
+    );
+    const cellsHtml = model.display.columns.map((id) => `<div class="cell ${id}">${cells[id]}</div>`).join('');
+    return (
+      `<div class="${[...classes, 'stash'].join(' ')}" style="top:${index * this.rowHeight}px" data-key="stash:${stash.hash}" ` +
+      `data-vscode-context="${context}">${cellsHtml}</div>`
     );
   }
 
@@ -414,7 +457,65 @@ export class CommitList {
     this.handlers.onRowHover(key, row.getBoundingClientRect(), event.clientX);
   }
 
+  // A branch badge dragged onto a commit row: the row lights up as a target, and the drop asks what to do.
+  private attachDragAndDrop(): void {
+    const dragType = 'text/x-dendro-ref';
+    let target: HTMLElement | null = null;
+    const clearTarget = () => {
+      target?.classList.remove('drop-target');
+      target = null;
+    };
+
+    this.rowsElement.addEventListener('dragstart', (event) => {
+      const badge = (event.target as HTMLElement).closest<HTMLElement>('.badge[draggable="true"]');
+      if (!badge || !event.dataTransfer) {
+        return;
+      }
+      event.dataTransfer.setData(dragType, JSON.stringify({ name: badge.dataset.refName, kind: badge.dataset.refKind }));
+      event.dataTransfer.effectAllowed = 'move';
+      document.body.classList.add('dragging-ref');
+      this.handlers.onRowLeave();
+    });
+    this.rowsElement.addEventListener('dragover', (event) => {
+      const row = (event.target as HTMLElement).closest<HTMLElement>('.row[data-key]');
+      if (!row || row.classList.contains('working') || !event.dataTransfer?.types.includes(dragType)) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      if (row !== target) {
+        clearTarget();
+        target = row;
+        row.classList.add('drop-target');
+      }
+    });
+    this.rowsElement.addEventListener('drop', (event) => {
+      const data = event.dataTransfer?.getData(dragType);
+      const key = target?.dataset.key;
+      clearTarget();
+      document.body.classList.remove('dragging-ref');
+      if (data && key) {
+        event.preventDefault();
+        const ref = JSON.parse(data) as { name: string; kind: RefInfo['kind'] };
+        this.handlers.onDropRef(ref.name, ref.kind, key);
+      }
+    });
+    this.rowsElement.addEventListener('dragend', () => {
+      clearTarget();
+      document.body.classList.remove('dragging-ref');
+    });
+  }
+
   private onRowClick(event: MouseEvent): void {
+    const actionButton = (event.target as HTMLElement).closest<HTMLElement>('[data-row-action]');
+    if (actionButton) {
+      event.stopPropagation();
+      const rowKey = actionButton.closest<HTMLElement>('.row')?.dataset.key;
+      if (rowKey) {
+        this.handlers.onRowAction(actionButton.dataset.rowAction as CommitAction, rowKey);
+      }
+      return;
+    }
     const row = (event.target as HTMLElement).closest<HTMLElement>('.row');
     if (row?.dataset.key) {
       this.handlers.onSelect(row.dataset.key, event.metaKey || event.ctrlKey);
