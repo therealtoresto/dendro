@@ -1,5 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { AutoFetcher } from './AutoFetcher';
 import { AvatarService } from './AvatarService';
 import { BlameService } from './blame/BlameService';
 import { BlameHovers } from './editor/BlameHovers';
@@ -44,6 +45,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const subscriptions = context.subscriptions;
 
   subscriptions.push(
+    new AutoFetcher(api),
     avatars,
     blame,
     annotations,

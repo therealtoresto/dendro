@@ -536,6 +536,18 @@
               "in place of the graph"
             ]
           },
+          "dendro.graph.autoFetch.enabled": {
+            "description": "Fetch from remotes automatically. Runs in the background for every open repository, so the graph shows commits you have not pulled yet. A repository fetched recently in any other way is skipped.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.graph.autoFetch.intervalMinutes": {
+            "description": "Fetch every (minutes)",
+            "default": 5,
+            "type": "number",
+            "minimum": 1,
+            "maximum": 240
+          },
           "dendro.graph.fetchPrune": {
             "description": "Remove remote branches that no longer exist when fetching",
             "default": true,
