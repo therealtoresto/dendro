@@ -400,6 +400,21 @@
         "title": "Compare with Current Branch",
         "category": "Dendro",
         "icon": "$(git-compare)"
+      },
+      {
+        "command": "dendro.rebaseInteractive",
+        "title": "Interactive Rebase from Here…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.rebaseContinue",
+        "title": "Continue Rebase",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.rebaseAbort",
+        "title": "Abort Rebase",
+        "category": "Dendro"
       }
     ],
     "menus": {
@@ -520,6 +535,11 @@
           "command": "dendro.compareRefWithCurrent",
           "group": "2_integrate@3",
           "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'ref' && refKind != 'worktree'"
+        },
+        {
+          "command": "dendro.rebaseInteractive",
+          "group": "4_integrate@3",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
         }
       ],
       "editor/title": [
@@ -804,6 +824,10 @@
         },
         {
           "command": "dendro.repo.compare",
+          "when": "false"
+        },
+        {
+          "command": "dendro.rebaseInteractive",
           "when": "false"
         }
       ],
@@ -1720,12 +1744,24 @@
           "name": "Line History"
         }
       ]
-    }
+    },
+    "customEditors": [
+      {
+        "viewType": "dendro.rebase",
+        "displayName": "Dendro Interactive Rebase",
+        "selector": [
+          {
+            "filenamePattern": "git-rebase-todo"
+          }
+        ],
+        "priority": "default"
+      }
+    ]
   },
   "scripts": {
     "build": "npm run sync-config && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare && tsc --noEmit -p rebase",
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",

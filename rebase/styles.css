@@ -1,0 +1,225 @@
+:root {
+  --bg: var(--vscode-editor-background);
+  --fg: var(--vscode-foreground);
+  --muted: var(--vscode-descriptionForeground);
+  --border: var(--vscode-panel-border, rgba(128, 128, 128, 0.25));
+  --pick: #3987e5;
+  --reword: #a855f7;
+  --edit: #eab308;
+  --squash: #14b8a6;
+  --fixup: #22c55e;
+  --drop: #e66767;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size, 13px);
+}
+
+#app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+code,
+kbd {
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+kbd {
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.rb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.rb-title {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.rb-summary,
+.rb-hint,
+.rb-meta {
+  color: var(--muted);
+}
+
+.rb-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.rb-buttons button {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.rb-start {
+  background: var(--vscode-button-background) !important;
+  color: var(--vscode-button-foreground) !important;
+  border-color: transparent !important;
+}
+
+.rb-start:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rb-problem {
+  margin-top: 10px;
+  padding: 10px 14px;
+  color: var(--drop);
+}
+
+.rb-hint {
+  margin: 12px 4px;
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+
+.rb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  cursor: default;
+  border-left: 3px solid var(--action-color, var(--pick));
+}
+
+.row-pick { --action-color: var(--pick); }
+.row-reword { --action-color: var(--reword); }
+.row-edit { --action-color: var(--edit); }
+.row-squash { --action-color: var(--squash); }
+.row-fixup { --action-color: var(--fixup); }
+.row-drop { --action-color: var(--drop); }
+
+.rb-row.row-drop .rb-text {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.rb-row.row-squash,
+.rb-row.row-fixup {
+  margin-left: 24px;
+}
+
+.rb-row.selected {
+  outline: 2px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.rb-row.drop-before {
+  box-shadow: 0 -3px 0 var(--vscode-focusBorder);
+}
+
+.rb-row.dragging {
+  opacity: 0.5;
+}
+
+.rb-grip {
+  color: var(--muted);
+  cursor: grab;
+  letter-spacing: -2px;
+}
+
+.rb-actions {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.rb-action {
+  padding: 2px 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.rb-action:hover {
+  color: var(--fg);
+}
+
+.rb-action.active {
+  color: #fff;
+  font-weight: 600;
+}
+
+.rb-action.active.action-pick { background: var(--pick); }
+.rb-action.active.action-reword { background: var(--reword); }
+.rb-action.active.action-edit { background: var(--edit); color: #1a1a1a; }
+.rb-action.active.action-squash { background: var(--squash); }
+.rb-action.active.action-fixup { background: var(--fixup); color: #0b2b14; }
+.rb-action.active.action-drop { background: var(--drop); }
+
+.rb-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.rb-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rb-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rb-meta {
+  font-size: 0.9em;
+}
+
+.rb-sha {
+  color: var(--muted);
+}

@@ -11,4 +11,6 @@
 !dist/history.css
 !dist/compare.js
 !dist/compare.css
+!dist/rebase.js
+!dist/rebase.css
 !media/**

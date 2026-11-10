@@ -60,13 +60,13 @@ export class GitService {
     readonly root: string,
   ) {}
 
-  run(args: string[], input?: string): Promise<string> {
-    return this.runForBuffer(args, input).then((buffer) => buffer.toString('utf8'));
+  run(args: string[], input?: string, extraEnv: Record<string, string> = {}): Promise<string> {
+    return this.runForBuffer(args, input, extraEnv).then((buffer) => buffer.toString('utf8'));
   }
 
-  runForBuffer(args: string[], input?: string): Promise<Buffer> {
+  runForBuffer(args: string[], input?: string, extraEnv: Record<string, string> = {}): Promise<Buffer> {
     // No prompts from the CLI path: credentials are the built-in Git extension's job (pull / push / fetch go there).
-    const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
+    const env = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0', ...extraEnv };
 
     return new Promise((resolve, reject) => {
       const child = execFile(

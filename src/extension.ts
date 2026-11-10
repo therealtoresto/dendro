@@ -15,6 +15,8 @@ import type { CommitAction } from './protocol';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
+import { InteractiveRebase } from './rebase/InteractiveRebase';
+import { RebaseEditorProvider } from './rebase/RebaseEditorProvider';
 import { RepositoryViews } from './repository/RepositoryViews';
 import { RevisionContentProvider, REVISION_SCHEME } from './RevisionContentProvider';
 import { Settings } from './Settings';
@@ -73,7 +75,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const codeLens = new BlameCodeLens(blame);
   const subscriptions = context.subscriptions;
 
+  const rootOfActiveEditor = () => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    return (uri && blame.findRoot(uri)) ?? GraphController.latest?.root ?? api.repositories[0]?.rootUri.fsPath;
+  };
+
   subscriptions.push(
+    vscode.window.registerCustomEditorProvider(RebaseEditorProvider.viewType, new RebaseEditorProvider(context, blame), {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+    vscode.commands.registerCommand('dendro.rebaseInteractive', (menu: MenuContext) => {
+      const controller = GraphController.findByViewId(menu?.webview);
+      if (controller?.root && menu.hash) {
+        return InteractiveRebase.start(blame.createGit(controller.root), menu.hash, menu.hash.slice(0, 7));
+      }
+      return undefined;
+    }),
+    vscode.commands.registerCommand('dendro.rebaseContinue', () => {
+      const root = rootOfActiveEditor();
+      return root ? InteractiveRebase.continue(blame.createGit(root)) : undefined;
+    }),
+    vscode.commands.registerCommand('dendro.rebaseAbort', () => {
+      const root = rootOfActiveEditor();
+      return root ? InteractiveRebase.abort(blame.createGit(root)) : undefined;
+    }),
     new RepositoryViews(api, blame),
     new HistoryViews(blame),
     autoFetcher,
