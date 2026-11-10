@@ -188,6 +188,11 @@
     background: var(--glass-hover);
   }
 
+  /* Tinted rows sit edge to edge as one band; rounded corners would notch it between every two rows. */
+  .row.lane-tint:not(.selected) {
+    border-radius: 0;
+  }
+
   .row.selected,
   .row.selected.lane-tint {
     background: var(--glass-sheen), color-mix(in srgb, var(--glass-accent) 30%, transparent);
