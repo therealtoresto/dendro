@@ -101,6 +101,7 @@ class GraphApp {
       onNeedMore: () => this.requestMore(),
       onResizeColumn: (id, width) => this.resizeColumn(id, width),
       onResetColumn: (id) => this.resizeColumn(id, null),
+      onMoveColumn: (id, before) => this.moveColumn(id, before),
       onRowHover: (key, row, pointerX) => this.onRowHover(key, row, pointerX),
       onRowLeave: () => this.onRowLeave(),
       onBadgeHover: (hash) => this.highlightBranch(hash),
@@ -338,6 +339,17 @@ class GraphApp {
     this.renderList();
   }
 
+  // The order is a setting, so it holds in every graph view; this view takes it at once instead of after the round trip.
+  private moveColumn(id: ColumnId, before: ColumnId | null): void {
+    const order = Columns.normalizeOrder(GraphApp.readList(this.settings['graph.columnOrder'])).filter((column) => column !== id);
+    order.splice(before === null ? order.length : order.indexOf(before), 0, id);
+    if (this.state) {
+      this.state.settings['graph.columnOrder'] = order;
+    }
+    this.renderList();
+    HostBridge.post({ type: 'updateSetting', key: 'graph.columnOrder', value: order });
+  }
+
   private resizeColumn(id: ColumnId, width: number | null): void {
     if (width === null) {
       delete this.columnWidths[id];
@@ -467,7 +479,7 @@ class GraphApp {
     const settings = this.settings;
     const pillsInline = settings['graph.pillLayout'] === 'inline';
     const shown = new Set(GraphApp.readList(settings['graph.columns'] ?? COLUMN_SPECS.map((spec) => spec.id)));
-    const columns = COLUMN_SPECS.map((spec) => spec.id).filter(
+    const columns = Columns.normalizeOrder(GraphApp.readList(settings['graph.columnOrder'])).filter(
       (id) => id === 'message' || (shown.has(id) && !(id === 'refs' && pillsInline)),
     );
     const useCommitDate = settings['dates.source'] === 'committed';
@@ -486,8 +498,8 @@ class GraphApp {
       getRowDate: (commit) => (useCommitDate ? commit.commitDate : commit.date),
       formatDate: (commit) => GraphApp.formatRowDate(dates, useCommitDate ? commit.commitDate : commit.date),
       formatTime: (unixSeconds) => GraphApp.formatRowDate(dates, unixSeconds),
-      // Two-digit day, month and hour: the widest a date in this format gets.
-      longDateSample: GraphApp.formatRowDate(dates, new Date(2026, 11, 28, 22, 58).getTime() / 1000).long,
+      // The longest month name with a two-digit day and hour: about the widest a date gets.
+      longDateSample: GraphApp.formatRowDate(dates, new Date(2026, 8, 28, 22, 58).getTime() / 1000).long,
       formatDay: (unixSeconds) => dates.formatShortDate(unixSeconds),
     };
   }
@@ -495,7 +507,7 @@ class GraphApp {
   private static formatRowDate(dates: DateFormatter, unixSeconds: number): RowDate {
     return {
       text: dates.formatCompact(unixSeconds),
-      long: `${dates.formatShortDate(unixSeconds)} ${dates.formatTime(unixSeconds)}`,
+      long: dates.formatReadable(unixSeconds),
       title: dates.formatFull(unixSeconds),
     };
   }

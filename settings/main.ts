@@ -176,6 +176,15 @@ class SettingsApp {
               `<button ${key} data-value="${option.value}" class="${option.value === value ? 'active' : ''}" ${off}>${Previews.escape(option.label)}</button>`,
           )
           .join('')}</div></div>`;
+      case 'order': {
+        const order = Array.isArray(value) ? value.map(String) : [];
+        const chips = order
+          .map((id) => item.options!.find((option) => option.value === id))
+          .filter((option) => option !== undefined)
+          .map((option) => `<span class="order-chip">${Previews.escape(option!.label)}</span>`)
+          .join('<span class="order-arrow">›</span>');
+        return `<div class="row-field"><span>${label}</span><button class="order-reset" ${key} data-reset ${off}>Reset</button></div><div class="order-chips">${chips}</div>`;
+      }
       case 'cards': {
         const selected = new Set(Array.isArray(value) ? value : []);
         return `<div class="field-label">${label}</div><div class="cards">${item
@@ -239,6 +248,16 @@ class SettingsApp {
       const item = SETTINGS_SECTIONS.flatMap((section) => section.items).find((candidate) => candidate.key === segment.dataset.key);
       if (item) {
         this.update(item, segment.dataset.value!);
+      }
+      return;
+    }
+
+    const reset = target.closest<HTMLButtonElement>('[data-reset]');
+    if (reset?.dataset.key) {
+      const item = SETTINGS_SECTIONS.flatMap((section) => section.items).find((candidate) => candidate.key === reset.dataset.key);
+      if (item) {
+        this.update(item, item.default);
+        this.render();
       }
       return;
     }

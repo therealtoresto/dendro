@@ -66,6 +66,17 @@ export class DateFormatter {
     return new Intl.DateTimeFormat(this.locale, { dateStyle: 'short' }).format(unixSeconds * 1000);
   }
 
+  // "November 6 2026, 7:24 PM": the month in words, the parts in the locale's order, no comma inside the date.
+  formatReadable(unixSeconds: number): string {
+    const parts = new Intl.DateTimeFormat(this.locale, { month: 'long', day: 'numeric', year: 'numeric' }).formatToParts(unixSeconds * 1000);
+    const date = parts
+      .map((part) => (part.type === 'literal' ? part.value.replace(/,\s*/g, ' ') : part.value))
+      .join('')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `${date}, ${this.formatTime(unixSeconds)}`;
+  }
+
   formatTime(unixSeconds: number): string {
     if (this.settings.timeFormat) {
       return this.formatPattern(unixSeconds, this.settings.timeFormat);

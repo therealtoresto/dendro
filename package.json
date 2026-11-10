@@ -1081,6 +1081,32 @@
             },
             "uniqueItems": true
           },
+          "dendro.graph.columnOrder": {
+            "description": "Column order. Drag a column header in the graph to move the column.",
+            "default": [
+              "refs",
+              "graph",
+              "message",
+              "author",
+              "changes",
+              "date",
+              "sha"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "refs",
+                "graph",
+                "message",
+                "author",
+                "changes",
+                "date",
+                "sha"
+              ]
+            },
+            "uniqueItems": true
+          },
           "dendro.graph.dimMergeCommits": {
             "description": "Fade merge commits",
             "default": false,

@@ -1729,3 +1729,27 @@ body.details-hidden .tool-details {
 .badge-remote .badge-origin {
   border-left-color: color-mix(in srgb, currentColor 35%, transparent);
 }
+
+/* Moving a column by its header */
+
+.list-header .cell {
+  cursor: grab;
+}
+
+body.moving-column,
+body.moving-column .list-header .cell {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.list-header .cell.col-dragging {
+  opacity: 0.45;
+}
+
+.list-header .cell.col-drop-before {
+  box-shadow: inset 2px 0 0 var(--vscode-focusBorder);
+}
+
+.list-header .cell.col-drop-after {
+  box-shadow: inset -2px 0 0 var(--vscode-focusBorder);
+}

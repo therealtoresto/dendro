@@ -75,6 +75,7 @@ interface ListHandlers {
   onBadgeHover(commitHash: string | null): void;
   onDropRef(name: string, kind: RefInfo['kind'], targetKey: string): void;
   onRowLeave(): void;
+  onMoveColumn(id: ColumnId, before: ColumnId | null): void;
   onScroll(): void;
 }
 
@@ -150,6 +151,7 @@ export class CommitList {
     this.rowsElement.addEventListener('click', (event) => this.onRowClick(event));
     this.attachDragAndDrop();
     this.rowsElement.addEventListener('dblclick', (event) => this.onRowDoubleClick(event));
+    Columns.attachReorder(this.header, { onMove: (id, before) => handlers.onMoveColumn(id, before) });
     Columns.attachResize(this.header, (id) => this.readColumnWidth(id), {
       onResize: (id, width) => {
         handlers.onResizeColumn(id, width);
@@ -398,7 +400,9 @@ export class CommitList {
 
     const refs = model.refsByHash.get(commit.hash) ?? [];
     const badges = RefBadges.render(refs, model.headBranch, GraphRenderer.getColor(layout.color), display.badges);
-    const linkBadges = badges !== '' && !display.pillsInline && display.columns.includes('refs') && display.columns.includes('graph');
+    // The line from a badge to its node only makes sense when the badges stand right before the graph.
+    const refsIndex = display.columns.indexOf('refs');
+    const linkBadges = badges !== '' && !display.pillsInline && refsIndex >= 0 && display.columns[refsIndex + 1] === 'graph';
     const body = commit.bodyPreview
       ? `<span class="body">${Format.highlight(commit.bodyPreview, model.searchQuery)}</span>`
       : '';

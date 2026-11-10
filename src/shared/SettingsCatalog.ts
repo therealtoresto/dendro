@@ -2,7 +2,7 @@
 // (`npm run sync-config`), the extension reads its defaults from it, and the Settings screen is drawn from it.
 
 export type SettingType = 'boolean' | 'number' | 'string' | 'enum' | 'flags' | 'color';
-export type SettingControl = 'checkbox' | 'number' | 'text' | 'select' | 'segmented' | 'cards' | 'color';
+export type SettingControl = 'checkbox' | 'number' | 'text' | 'select' | 'segmented' | 'cards' | 'color' | 'order';
 
 export interface SettingOption {
   value: string | number;
@@ -168,6 +168,23 @@ export const SETTINGS_SECTIONS: SettingSection[] = [
           { value: 'date', label: 'Date', description: 'When the commit was made' },
           { value: 'sha', label: 'SHA', description: 'The short commit id' },
         ],
+      },
+      {
+        key: 'graph.columnOrder',
+        type: 'flags',
+        control: 'order',
+        label: 'Column order',
+        default: ['refs', 'graph', 'message', 'author', 'changes', 'date', 'sha'],
+        options: [
+          { value: 'refs', label: 'Branch / Tag' },
+          { value: 'graph', label: 'Graph' },
+          { value: 'message', label: 'Commit message' },
+          { value: 'author', label: 'Author' },
+          { value: 'changes', label: 'Changes' },
+          { value: 'date', label: 'Date' },
+          { value: 'sha', label: 'SHA' },
+        ],
+        note: 'Drag a column header in the graph to move the column.',
       },
       {
         key: 'graph.dimMergeCommits',
