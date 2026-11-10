@@ -5,7 +5,6 @@ import {
   GraphState,
   HostMessage,
   RefInfo,
-  RemoteAction,
   WORKING_CHANGES_KEY,
 } from '../src/protocol';
 import { DateFormatter } from '../src/shared/DateFormatter';
@@ -34,7 +33,6 @@ interface SearchState {
 
 class GraphApp {
   private state: GraphState | null = null;
-  private busy: RemoteAction | null = null;
   private commits: CommitInfo[] = [];
   private hasMore = false;
   private loading = false;
@@ -127,10 +125,10 @@ class GraphApp {
         this.renderList();
         return;
       case 'busy':
-        this.busy = message.action;
-        if (this.state) {
-          this.toolbar.render(this.state, this.busy, this.dates);
-        }
+        this.toolbar.setBusy(message.action, message.automatic === true);
+        return;
+      case 'remoteResult':
+        this.toolbar.showRemoteResult(message.action, message.ok, message.message);
         return;
       case 'commitDetails':
         if (message.details.hash === this.selectedKey) {
@@ -189,7 +187,7 @@ class GraphApp {
       },
       state.locale,
     );
-    this.toolbar.render(state, this.busy, this.dates);
+    this.toolbar.render(state, this.dates);
     this.indexRefs();
 
     if (!state.root) {

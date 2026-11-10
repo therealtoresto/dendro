@@ -20,6 +20,7 @@ export class RepoActions {
     private readonly git: GitService,
     private readonly onBusyChange: (action: RemoteAction | null) => void,
     private readonly onChanged: () => void,
+    private readonly onResult: (action: RemoteAction, ok: boolean, message?: string) => void,
   ) {}
 
   get busyAction(): RemoteAction | null {
@@ -192,7 +193,9 @@ export class RepoActions {
         task,
       );
       vscode.window.setStatusBarMessage(`$(check) Dendro: ${action} done`, 3000);
+      this.onResult(action, true);
     } catch (error) {
+      this.onResult(action, false, RepoActions.firstLine(RepoActions.readErrorMessage(error)));
       await this.showRemoteError(action, error);
     } finally {
       this.runningAction = null;

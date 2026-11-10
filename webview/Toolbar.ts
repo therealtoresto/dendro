@@ -2,6 +2,7 @@ import type { GraphState, RemoteAction } from '../src/protocol';
 import type { DateFormatter } from '../src/shared/DateFormatter';
 import { HostBridge } from './HostBridge';
 import { Icons } from './Icons';
+import { RemoteButtons } from './RemoteButtons';
 
 interface ToolbarHandlers {
   onSearchInput(query: string): void;
@@ -12,9 +13,7 @@ interface ToolbarHandlers {
 export class Toolbar {
   private readonly repoButton: HTMLButtonElement;
   private readonly branchButton: HTMLButtonElement;
-  private readonly pullButton: HTMLButtonElement;
-  private readonly pushButton: HTMLButtonElement;
-  private readonly fetchButton: HTMLButtonElement;
+  private readonly remoteButtons: RemoteButtons;
   private readonly branchesSelect: HTMLSelectElement;
   private readonly searchInput: HTMLInputElement;
   private readonly searchStatus: HTMLElement;
@@ -27,9 +26,7 @@ export class Toolbar {
       <button class="tool tool-repo" title="Choose repository">${Icons.render('repo')}<span class="tool-label"></span></button>
       <button class="tool tool-branch" title="Checkout another branch">${Icons.render('branch')}<span class="tool-label"></span></button>
       <span class="tool-separator"></span>
-      <button class="tool tool-pull" title="Pull">${Icons.render('pull')}<span>Pull</span><span class="tool-count"></span></button>
-      <button class="tool tool-push" title="Push">${Icons.render('push')}<span>Push</span><span class="tool-count"></span></button>
-      <button class="tool tool-fetch" title="Fetch all remotes">${Icons.render('fetch')}<span>Fetch</span><span class="tool-note"></span></button>
+      <span class="remote-buttons"></span>
       <button class="tool tool-refresh" title="Refresh">${Icons.render('refresh')}</button>
       <span class="tool-separator"></span>
       <select class="tool tool-select branches-select" title="Which branches the graph shows">
@@ -49,18 +46,13 @@ export class Toolbar {
 
     this.repoButton = element.querySelector('.tool-repo')!;
     this.branchButton = element.querySelector('.tool-branch')!;
-    this.pullButton = element.querySelector('.tool-pull')!;
-    this.pushButton = element.querySelector('.tool-push')!;
-    this.fetchButton = element.querySelector('.tool-fetch')!;
+    this.remoteButtons = new RemoteButtons(element.querySelector('.remote-buttons')!);
     this.branchesSelect = element.querySelector('.branches-select')!;
     this.searchInput = element.querySelector('.search-input')!;
     this.searchStatus = element.querySelector('.search-status')!;
 
     this.repoButton.addEventListener('click', () => HostBridge.post({ type: 'pickRepo' }));
     this.branchButton.addEventListener('click', () => HostBridge.post({ type: 'pickBranch' }));
-    this.pullButton.addEventListener('click', () => HostBridge.post({ type: 'remote', action: 'pull' }));
-    this.pushButton.addEventListener('click', () => HostBridge.post({ type: 'remote', action: 'push' }));
-    this.fetchButton.addEventListener('click', () => HostBridge.post({ type: 'remote', action: 'fetch' }));
     element.querySelector('.tool-refresh')!.addEventListener('click', () => HostBridge.post({ type: 'refresh' }));
     this.branchesSelect.addEventListener('change', () =>
       HostBridge.post({ type: 'updateSetting', key: 'graph.showBranches', value: this.branchesSelect.value }),
@@ -74,7 +66,7 @@ export class Toolbar {
     element.querySelector('.search-clear')!.addEventListener('click', () => this.clearSearch());
   }
 
-  render(state: GraphState, busy: RemoteAction | null, dates: DateFormatter): void {
+  render(state: GraphState, dates: DateFormatter): void {
     const { head } = state;
     const hasRepo = state.root !== null;
     const repoName = state.repos.find((repo) => repo.root === state.root)?.name ?? 'No repository';
@@ -86,31 +78,16 @@ export class Toolbar {
     this.branchButton.querySelector('.tool-label')!.textContent =
       head.branch ?? (head.hash ? `detached at ${head.hash.slice(0, 7)}` : 'no commits');
 
-    const pullCount = head.behind > 0 ? `${head.behind}↓` : '';
-    const pushCount = head.ahead > 0 ? `${head.ahead}↑` : '';
-    this.pullButton.querySelector('.tool-count')!.textContent = pullCount;
-    this.pushButton.querySelector('.tool-count')!.textContent = pushCount;
-    this.pullButton.classList.toggle('attention', head.behind > 0);
-    this.pushButton.classList.toggle('attention', head.ahead > 0 || (head.branch !== null && !head.upstream));
-    this.pushButton.title = head.branch && !head.upstream ? `Publish ${head.branch}` : 'Push';
-    this.pullButton.title = head.upstream ? `Pull from ${head.upstream}` : 'Pull';
-
-    const fetchNote = state.lastFetch ? `(${dates.formatCompact(state.lastFetch / 1000)})` : '';
-    this.fetchButton.querySelector('.tool-note')!.textContent = fetchNote;
-    this.fetchButton.title = state.lastFetch
-      ? `Fetch all remotes — last fetch ${dates.formatFull(state.lastFetch / 1000)}`
-      : 'Fetch all remotes';
-
-    for (const [button, action] of [
-      [this.pullButton, 'pull'],
-      [this.pushButton, 'push'],
-      [this.fetchButton, 'fetch'],
-    ] as const) {
-      button.disabled = !hasRepo || busy !== null;
-      button.classList.toggle('busy', busy === action);
-    }
-
+    this.remoteButtons.render(state, dates);
     this.branchesSelect.value = String(state.settings['graph.showBranches']);
+  }
+
+  setBusy(action: RemoteAction | null, automatic: boolean): void {
+    this.remoteButtons.setBusy(action, automatic);
+  }
+
+  showRemoteResult(action: RemoteAction, ok: boolean, message?: string): void {
+    this.remoteButtons.showResult(action, ok, message);
   }
 
   setSearchStatus(text: string): void {

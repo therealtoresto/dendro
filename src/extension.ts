@@ -38,14 +38,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const api = (await gitExtension.activate()).getAPI(1);
   const avatars = new AvatarService(context, api.git.path);
-  GraphPanel.avatars = avatars;
+  const autoFetcher = new AutoFetcher(api);
+  GraphPanel.services = { avatars, autoFetcher };
   const blame = new BlameService(api, avatars);
   const annotations = new FileAnnotations(blame, avatars);
   const lineBlame = new LineBlame(blame);
   const subscriptions = context.subscriptions;
 
   subscriptions.push(
-    new AutoFetcher(api),
+    autoFetcher,
     avatars,
     blame,
     annotations,

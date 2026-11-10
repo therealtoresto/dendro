@@ -73,12 +73,19 @@ export interface ComparisonDetails {
   files: ChangedFile[];
 }
 
+export interface RemoteSummary {
+  name: string;
+  host: string;
+  kind: 'github' | 'gitlab' | 'other';
+}
+
 export interface GraphState {
   repos: RepoSummary[];
   root: string | null;
   head: HeadInfo;
   working: WorkingSummary;
   incoming: string[];
+  remote: RemoteSummary | null;
   lastFetch: number | null;
   settings: SettingValues;
   locale: string;
@@ -145,7 +152,8 @@ export type HostMessage =
   | { type: 'commitDetails'; details: CommitDetails }
   | { type: 'workingDetails'; details: WorkingDetails }
   | { type: 'comparisonDetails'; details: ComparisonDetails }
-  | { type: 'busy'; action: RemoteAction | null }
+  | { type: 'busy'; action: RemoteAction | null; automatic?: boolean }
+  | { type: 'remoteResult'; action: RemoteAction; ok: boolean; message?: string }
   | { type: 'searchResult'; query: string; hashes: string[] }
   | { type: 'loadUntilDone'; found: boolean }
   | { type: 'reveal'; hash: string }

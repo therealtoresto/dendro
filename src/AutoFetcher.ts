@@ -7,13 +7,21 @@ const STARTUP_DELAY_MS = 15_000;
 const MINUTE_MS = 60_000;
 const MAX_BACKOFF_STEPS = 4;
 
+export interface AutoFetchActivity {
+  root: string;
+  running: boolean;
+}
+
 // Fetches every open repository in the background, so the graph shows commits that are not pulled yet. A repository
 // fetched recently by anything else (a manual fetch, the built-in auto fetch) is skipped; one that keeps failing,
 // e.g. off the VPN, is retried at a growing interval and never interrupts the user.
 export class AutoFetcher implements vscode.Disposable {
   private timer: NodeJS.Timeout | undefined;
+  private readonly activityEmitter = new vscode.EventEmitter<AutoFetchActivity>();
   private readonly failures = new Map<string, number>();
   private readonly disposables: vscode.Disposable[] = [];
+
+  readonly onDidChangeActivity = this.activityEmitter.event;
 
   constructor(private readonly api: API) {
     this.disposables.push(
@@ -28,6 +36,7 @@ export class AutoFetcher implements vscode.Disposable {
 
   dispose(): void {
     clearTimeout(this.timer);
+    this.activityEmitter.dispose();
     for (const disposable of this.disposables) {
       disposable.dispose();
     }
@@ -57,11 +66,14 @@ export class AutoFetcher implements vscode.Disposable {
         continue;
       }
 
+      this.activityEmitter.fire({ root, running: true });
       try {
         await repo.fetch({ all: true, prune: Settings.get<boolean>('graph.fetchPrune') });
         this.failures.delete(root);
       } catch {
         this.failures.set(root, failures + 1);
+      } finally {
+        this.activityEmitter.fire({ root, running: false });
       }
     }
 

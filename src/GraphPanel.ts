@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import type { AvatarService } from './AvatarService';
 import type { API } from './git/git';
-import { GraphController } from './GraphController';
+import { GraphController, GraphServices } from './GraphController';
 import { Settings } from './Settings';
 
 // The graph lives either in an editor tab (GraphPanel) or in the bottom panel (GraphViewProvider); both hand the
@@ -11,7 +10,7 @@ export class GraphPanel {
   private static panel: vscode.WebviewPanel | undefined;
   private static controller: GraphController | undefined;
 
-  static avatars: AvatarService;
+  static services: GraphServices;
 
   static async open(context: vscode.ExtensionContext, api: API, revealHash?: string, root?: string): Promise<void> {
     if (Settings.get<string>('graph.location') === 'panel') {
@@ -50,7 +49,7 @@ export class GraphPanel {
       },
       context,
       api,
-      GraphPanel.avatars,
+      GraphPanel.services,
     );
     GraphPanel.panel = panel;
     GraphPanel.controller = controller;
@@ -91,7 +90,7 @@ export class GraphViewProvider implements vscode.WebviewViewProvider {
       },
       this.context,
       this.api,
-      GraphPanel.avatars,
+      GraphPanel.services,
     );
     GraphViewProvider.controller = controller;
 

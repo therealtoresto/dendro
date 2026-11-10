@@ -1,8 +1,10 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import type { AutoFetcher } from './AutoFetcher';
 import type { AvatarService } from './AvatarService';
 import type { API, Repository } from './git/git';
 import { CommitOrder, GitService } from './git/GitService';
+import { RemoteUrl } from './git/RemoteUrl';
 import { FileChange, WorkingChangeCounter } from './git/WorkingChangeCounter';
 import type {
   ChangedFile,
@@ -14,6 +16,7 @@ import type {
   HostMessage,
   WorkingSummary,
   RefInfo,
+  RemoteSummary,
   WebviewMessage,
 } from './protocol';
 import { RepoActions } from './RepoActions';
@@ -50,6 +53,11 @@ export interface MenuContext {
 
 export type CommitAction = 'copySha' | 'copyMessage' | 'checkout' | 'createBranch' | 'cherryPick' | 'revert' | 'reset';
 
+export interface GraphServices {
+  avatars: AvatarService;
+  autoFetcher: AutoFetcher;
+}
+
 export interface GraphHost {
   readonly viewId: string;
   readonly webview: vscode.Webview;
@@ -78,6 +86,8 @@ export class GraphController {
   private avatarTimer: NodeJS.Timeout | undefined;
   private avatarSignature = '';
   private readonly hoverInfos = new Map<string, CommitHoverInfo>();
+  private readonly remoteSummaries = new Map<string, Promise<RemoteSummary | null>>();
+  private autoFetching = false;
   private pendingReveal: string | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private stateTimer: NodeJS.Timeout | undefined;
@@ -101,7 +111,7 @@ export class GraphController {
     private readonly host: GraphHost,
     private readonly context: vscode.ExtensionContext,
     private readonly api: API,
-    private readonly avatars: AvatarService,
+    private readonly services: GraphServices,
   ) {
     GraphController.controllers.add(this);
     GraphController.lastUsed = this;
@@ -120,6 +130,13 @@ export class GraphController {
         if (event.affectsConfiguration('dendro')) {
           this.scheduleRefresh(false);
         }
+      }),
+      services.autoFetcher.onDidChangeActivity((activity) => {
+        if (activity.root !== this.git?.root || this.actions?.busyAction) {
+          return;
+        }
+        this.autoFetching = activity.running;
+        this.post({ type: 'busy', action: activity.running ? 'fetch' : null, automatic: true });
       }),
     );
 
@@ -270,6 +287,7 @@ export class GraphController {
       this.git,
       (action) => this.post({ type: 'busy', action }),
       () => this.scheduleRefresh(false),
+      (action, ok, message) => this.post({ type: 'remoteResult', action, ok, message }),
     );
     this.repoListeners.push(repo.state.onDidChange(() => this.scheduleRefresh(false)));
     this.scheduleRefresh(true);
@@ -310,12 +328,13 @@ export class GraphController {
     }
     this.head = head;
     this.refs = refs;
-    const [lastFetch, working, incoming] = await Promise.all([
+    const [lastFetch, working, incoming, remote] = await Promise.all([
       git.getLastFetchTime(),
       this.summarizeWorkingChanges(git),
       head.behind > 0 ? git.getIncomingHashes(MAX_INCOMING).catch(() => []) : Promise.resolve([]),
+      this.getRemoteSummary(git, head.upstream),
     ]);
-    this.postState(lastFetch, working, incoming);
+    this.postState(lastFetch, working, incoming, remote);
 
     // A repository can carry thousands of tags; they cross to the webview only when one of them moved.
     const refsSignature = refs.map((ref) => `${ref.kind}${ref.name}${ref.hash}${ref.ahead ?? ''}${ref.behind ?? ''}`).join('\n');
@@ -336,6 +355,7 @@ export class GraphController {
     lastFetch: number | null,
     working: WorkingSummary = this.summarizeWorkingFiles(),
     incoming: string[] = [],
+    remote: RemoteSummary | null = null,
   ): void {
     const state: GraphState = {
       repos: this.api.repositories.map((repo) => ({
@@ -346,12 +366,32 @@ export class GraphController {
       head: this.head,
       working,
       incoming,
+      remote,
       lastFetch,
       settings: Settings.readAll(),
       locale: Settings.getEditorLocale(),
     };
     this.post({ type: 'state', state });
-    this.post({ type: 'busy', action: this.actions?.busyAction ?? null });
+    const manual = this.actions?.busyAction ?? null;
+    this.post({ type: 'busy', action: manual ?? (this.autoFetching ? 'fetch' : null), automatic: !manual && this.autoFetching });
+  }
+
+  // The remote the current branch tracks (or "origin"), named for the toolbar: "origin on GitLab".
+  private getRemoteSummary(git: GitService, upstream: string | null): Promise<RemoteSummary | null> {
+    const name = upstream ? upstream.split('/')[0] : 'origin';
+    const key = `${git.root}\n${name}`;
+    let summary = this.remoteSummaries.get(key);
+    if (!summary) {
+      summary = git
+        .run(['remote', 'get-url', name])
+        .then((url) => {
+          const remote = RemoteUrl.parse(url.trim());
+          return remote ? { name, host: remote.host, kind: remote.kind } : null;
+        })
+        .catch(() => null);
+      this.remoteSummaries.set(key, summary);
+    }
+    return summary;
   }
 
   private summarizeWorkingFiles(): WorkingSummary {
@@ -467,7 +507,7 @@ export class GraphController {
         this.post({ type: 'avatars', avatars: {}, reset: true });
       }
     }
-    if (!Settings.get<boolean>('graph.avatars') || !this.avatars.enabled) {
+    if (!Settings.get<boolean>('graph.avatars') || !this.services.avatars.enabled) {
       return;
     }
 
@@ -477,7 +517,7 @@ export class GraphController {
         continue;
       }
       this.sentAvatars.add(email);
-      void this.avatars.request(email, root, commit.hash).then((image) => {
+      void this.services.avatars.request(email, root, commit.hash).then((image) => {
         if (image) {
           this.unsentAvatars[email] = image.dataUri;
           this.scheduleAvatarFlush();
