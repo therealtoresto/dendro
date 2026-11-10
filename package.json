@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/therealtoresto/dendro/issues"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
@@ -1678,7 +1678,7 @@
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history",
     "test": "node --import tsx --test test/*.test.ts",
-    "package": "npm run build && vsce package --no-dependencies --skip-license -o dendro.vsix",
+    "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",
     "sync-config": "tsx scripts/syncConfig.ts"
   },
