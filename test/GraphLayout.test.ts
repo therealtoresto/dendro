@@ -52,17 +52,30 @@ describe('GraphLayout', () => {
     assert.deepEqual(getSegments(rows[2], 'top'), ['0>0', '1>0']);
   });
 
-  it('reuses a freed lane instead of growing the graph', () => {
-    const { rows, maxLanes } = GraphLayout.compute([
+  it('reuses a freed lane once a row has passed, never right under the end of a line', () => {
+    const { rows } = GraphLayout.compute([
       { hash: 'a2', parents: ['a1'] },
       { hash: 'b1', parents: ['a1'] },
-      { hash: 'a1', parents: ['root'] },
+      { hash: 'a1', parents: ['a0'] },
       { hash: 'c1', parents: ['root'] },
+      { hash: 'a0', parents: ['root'] },
+      { hash: 'd1', parents: ['root'] },
       { hash: 'root', parents: [] },
     ]);
 
-    assert.equal(rows[3].lane, 1);
-    assert.equal(maxLanes, 2);
+    assert.equal(rows[3].lane, 2);
+    assert.equal(rows[5].lane, 1);
+  });
+
+  it('puts an unrelated history beside the one that ended right above it', () => {
+    const { rows } = GraphLayout.compute([
+      { hash: 'new2', parents: ['new1'] },
+      { hash: 'new1', parents: [] },
+      { hash: 'old2', parents: ['old1'] },
+      { hash: 'old1', parents: [] },
+    ]);
+
+    assert.deepEqual(rows.map((row) => row.lane), [0, 0, 1, 1]);
   });
 
   it('draws the Working Changes lane dashed down to HEAD', () => {

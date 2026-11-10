@@ -44,6 +44,7 @@ export class GraphLayout {
   static compute(inputs: LayoutInput[], keepFirstLaneFor?: string): GraphLayoutResult {
     const lanes: (LaneSlot | null)[] = [];
     const rows: RowLayout[] = [];
+    const freedAt: number[] = [];
     let nextColor = 0;
     let maxLanes = 0;
 
@@ -51,7 +52,7 @@ export class GraphLayout {
       lanes[0] = { waitsFor: keepFirstLaneFor, color: nextColor++, dashed: false, hidden: true };
     }
 
-    for (const input of inputs) {
+    inputs.forEach((input, row) => {
       const segments: Segment[] = [];
       const waiting = GraphLayout.findLanesWaitingFor(lanes, input.hash);
 
@@ -59,7 +60,7 @@ export class GraphLayout {
       if (waiting.length > 0) {
         lane = waiting[0];
       } else {
-        lane = GraphLayout.findFreeLane(lanes, -1);
+        lane = GraphLayout.findFreeLane(lanes, -1, freedAt, row);
         lanes[lane] = { waitsFor: input.hash, color: nextColor++, dashed: false };
       }
       const nodeColor = lanes[lane]!.color;
@@ -77,10 +78,14 @@ export class GraphLayout {
       for (const index of waiting) {
         if (index !== lane) {
           lanes[index] = null;
+          freedAt[index] = row;
         }
       }
 
       const [firstParent, ...otherParents] = input.parents;
+      if (!firstParent) {
+        freedAt[lane] = row;
+      }
       lanes[lane] = firstParent
         ? { waitsFor: firstParent, color: nodeColor, dashed: Boolean(input.dashed) }
         : null;
@@ -92,7 +97,7 @@ export class GraphLayout {
           mergeLanes.add(existing);
           continue;
         }
-        const freeLane = GraphLayout.findFreeLane(lanes, lane);
+        const freeLane = GraphLayout.findFreeLane(lanes, lane, freedAt, row);
         lanes[freeLane] = { waitsFor: parent, color: nextColor++, dashed: false };
         mergeLanes.add(freeLane);
       }
@@ -121,7 +126,7 @@ export class GraphLayout {
       const laneCount = Math.max(topLaneCount, lanes.length, lane + 1);
       maxLanes = Math.max(maxLanes, laneCount);
       rows.push({ lane, color: nodeColor, segments, laneCount });
-    }
+    });
 
     return { rows, maxLanes };
   }
@@ -136,13 +141,24 @@ export class GraphLayout {
     return found;
   }
 
-  private static findFreeLane(lanes: (LaneSlot | null)[], taken: number): number {
+  // A lane that ended in this row or the row above is not handed to a new line yet: right under the end of one
+  // branch, a new one in the same column would read as its continuation.
+  private static findFreeLane(lanes: (LaneSlot | null)[], taken: number, freedAt: number[], row: number): number {
+    const isResting = (index: number) => freedAt[index] !== undefined && freedAt[index] >= row - 1;
     for (let index = 0; index < lanes.length; index++) {
-      if (lanes[index] === null && index !== taken) {
+      if (lanes[index] === null && index !== taken && !isResting(index)) {
         return index;
       }
     }
-    return lanes.length;
+
+    let index = lanes.length;
+    while (index === taken || isResting(index)) {
+      index++;
+    }
+    while (lanes.length < index) {
+      lanes.push(null);
+    }
+    return index;
   }
 
   // A lane that passed straight through the top half keeps going; a lane opened in this row for a merge parent
