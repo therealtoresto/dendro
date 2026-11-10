@@ -164,6 +164,9 @@ class GraphApp {
       case 'reveal':
         this.selectCommitAnywhere(message.hash);
         return;
+      case 'setSearch':
+        this.toolbar.setSearch(message.query);
+        return;
       case 'avatars':
         this.onAvatars(message.avatars, message.reset === true);
         return;

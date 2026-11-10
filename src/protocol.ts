@@ -190,4 +190,5 @@ export type HostMessage =
   | { type: 'reveal'; hash: string }
   | { type: 'avatars'; avatars: Record<string, string>; reset?: boolean }
   | { type: 'hoverInfo'; info: CommitHoverInfo }
+  | { type: 'setSearch'; query: string }
   | { type: 'error'; message: string };

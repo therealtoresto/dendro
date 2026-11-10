@@ -14,6 +14,7 @@ import type { CommitAction } from './protocol';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
+import { RepositoryViews } from './repository/RepositoryViews';
 import { RevisionContentProvider, REVISION_SCHEME } from './RevisionContentProvider';
 import { Settings } from './Settings';
 import { SettingsPanel } from './SettingsPanel';
@@ -72,6 +73,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const subscriptions = context.subscriptions;
 
   subscriptions.push(
+    new RepositoryViews(api, blame),
     new HistoryViews(blame),
     autoFetcher,
     avatars,
@@ -113,6 +115,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('dendro.showCommit', (sha: string, root?: string) =>
       GraphPanel.open(context, api, sha, root),
     ),
+    vscode.commands.registerCommand('dendro.searchGraph', async (query: string) => {
+      await GraphPanel.open(context, api);
+      GraphController.latest?.searchFor(query);
+    }),
     vscode.commands.registerCommand('dendro.copyText', async (text: string) => {
       await vscode.env.clipboard.writeText(text);
       vscode.window.setStatusBarMessage('$(check) Dendro: copied', 2000);

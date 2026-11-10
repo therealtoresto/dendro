@@ -255,6 +255,121 @@
         "command": "dendro.stashDrop",
         "title": "Drop Stash…",
         "category": "Dendro"
+      },
+      {
+        "command": "dendro.searchGraph",
+        "title": "Search the Commit Graph",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.refresh",
+        "title": "Refresh",
+        "category": "Dendro",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "dendro.repo.showInGraph",
+        "title": "Show in Commit Graph",
+        "category": "Dendro",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "dendro.repo.checkout",
+        "title": "Checkout",
+        "category": "Dendro",
+        "icon": "$(check)"
+      },
+      {
+        "command": "dendro.repo.merge",
+        "title": "Merge into Current Branch",
+        "category": "Dendro",
+        "icon": "$(git-merge)"
+      },
+      {
+        "command": "dendro.repo.rebase",
+        "title": "Rebase Current Branch onto This",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.rename",
+        "title": "Rename…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.delete",
+        "title": "Delete…",
+        "category": "Dendro",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dendro.repo.push",
+        "title": "Push",
+        "category": "Dendro",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "dendro.repo.fetchRemote",
+        "title": "Fetch",
+        "category": "Dendro",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "dendro.repo.stashApply",
+        "title": "Apply",
+        "category": "Dendro",
+        "icon": "$(check)"
+      },
+      {
+        "command": "dendro.repo.stashPop",
+        "title": "Pop",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.stashDrop",
+        "title": "Drop…",
+        "category": "Dendro",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dendro.repo.openStashFile",
+        "title": "Open Changes",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.repo.openWorktree",
+        "title": "Open in New Window",
+        "category": "Dendro",
+        "icon": "$(empty-window)"
+      },
+      {
+        "command": "dendro.repo.removeWorktree",
+        "title": "Remove Worktree…",
+        "category": "Dendro",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dendro.repo.searchAuthor",
+        "title": "Find Their Commits in the Graph",
+        "category": "Dendro",
+        "icon": "$(search)"
+      },
+      {
+        "command": "dendro.repo.createBranch",
+        "title": "Create Branch…",
+        "category": "Dendro",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dendro.repo.addWorktree",
+        "title": "Add Worktree…",
+        "category": "Dendro",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dendro.repo.stashSave",
+        "title": "Stash All Changes…",
+        "category": "Dendro",
+        "icon": "$(archive)"
       }
     ],
     "menus": {
@@ -432,6 +547,26 @@
           "command": "dendro.showFileHistoryChart",
           "group": "navigation@1",
           "when": "view == dendro.fileHistory"
+        },
+        {
+          "command": "dendro.repo.refresh",
+          "group": "navigation@9",
+          "when": "view =~ /^dendro\\.(branches|remotes|tags|stashes|worktrees|contributors)$/"
+        },
+        {
+          "command": "dendro.repo.createBranch",
+          "group": "navigation@1",
+          "when": "view == dendro.branches"
+        },
+        {
+          "command": "dendro.repo.addWorktree",
+          "group": "navigation@1",
+          "when": "view == dendro.worktrees"
+        },
+        {
+          "command": "dendro.repo.stashSave",
+          "group": "navigation@1",
+          "when": "view == dendro.stashes"
         }
       ],
       "commandPalette": [
@@ -554,6 +689,70 @@
         {
           "command": "dendro.stashDrop",
           "when": "false"
+        },
+        {
+          "command": "dendro.searchGraph",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.showInGraph",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.checkout",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.merge",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.rebase",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.rename",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.delete",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.push",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.fetchRemote",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.stashApply",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.stashPop",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.stashDrop",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.openStashFile",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.openWorktree",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.removeWorktree",
+          "when": "false"
+        },
+        {
+          "command": "dendro.repo.searchAuthor",
+          "when": "false"
         }
       ],
       "view/item/context": [
@@ -586,6 +785,91 @@
           "command": "dendro.history.copySha",
           "group": "3_copy@1",
           "when": "viewItem == dendro.historyCommit"
+        },
+        {
+          "command": "dendro.repo.checkout",
+          "group": "inline@1",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch"
+        },
+        {
+          "command": "dendro.repo.showInGraph",
+          "group": "inline@2",
+          "when": "viewItem =~ /^dendro\\.(branch|remoteBranch|tag)/"
+        },
+        {
+          "command": "dendro.repo.checkout",
+          "group": "1_checkout@1",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+        },
+        {
+          "command": "dendro.repo.showInGraph",
+          "group": "1_checkout@2",
+          "when": "viewItem =~ /^dendro\\.(branch|remoteBranch|tag)/ || viewItem == dendro.stash"
+        },
+        {
+          "command": "dendro.repo.merge",
+          "group": "2_integrate@1",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+        },
+        {
+          "command": "dendro.repo.rebase",
+          "group": "2_integrate@2",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+        },
+        {
+          "command": "dendro.repo.push",
+          "group": "3_remote@1",
+          "when": "viewItem =~ /^dendro\\.branch/"
+        },
+        {
+          "command": "dendro.repo.rename",
+          "group": "4_edit@1",
+          "when": "viewItem =~ /^dendro\\.branch/"
+        },
+        {
+          "command": "dendro.repo.delete",
+          "group": "9_delete@1",
+          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+        },
+        {
+          "command": "dendro.repo.fetchRemote",
+          "group": "inline@1",
+          "when": "viewItem == dendro.remote"
+        },
+        {
+          "command": "dendro.repo.stashApply",
+          "group": "inline@1",
+          "when": "viewItem == dendro.stash"
+        },
+        {
+          "command": "dendro.repo.stashApply",
+          "group": "1_stash@1",
+          "when": "viewItem == dendro.stash"
+        },
+        {
+          "command": "dendro.repo.stashPop",
+          "group": "1_stash@2",
+          "when": "viewItem == dendro.stash"
+        },
+        {
+          "command": "dendro.repo.stashDrop",
+          "group": "9_delete@1",
+          "when": "viewItem == dendro.stash"
+        },
+        {
+          "command": "dendro.repo.openWorktree",
+          "group": "inline@1",
+          "when": "viewItem == dendro.worktree"
+        },
+        {
+          "command": "dendro.repo.removeWorktree",
+          "group": "9_delete@1",
+          "when": "viewItem == dendro.worktree"
+        },
+        {
+          "command": "dendro.repo.searchAuthor",
+          "group": "inline@1",
+          "when": "viewItem == dendro.contributor"
         }
       ],
       "explorer/context": [
@@ -1341,6 +1625,35 @@
         }
       ],
       "dendro-history": [
+        {
+          "id": "dendro.branches",
+          "name": "Branches"
+        },
+        {
+          "id": "dendro.remotes",
+          "name": "Remotes",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "dendro.tags",
+          "name": "Tags",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "dendro.stashes",
+          "name": "Stashes",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "dendro.worktrees",
+          "name": "Worktrees",
+          "visibility": "collapsed"
+        },
+        {
+          "id": "dendro.contributors",
+          "name": "Contributors",
+          "visibility": "collapsed"
+        },
         {
           "id": "dendro.fileHistory",
           "name": "File History"

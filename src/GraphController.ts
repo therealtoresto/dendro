@@ -95,6 +95,7 @@ export class GraphController {
   private readonly remoteSummaries = new Map<string, Promise<RemoteSummary | null>>();
   private autoFetching = false;
   private pendingReveal: string | null = null;
+  private pendingSearch: string | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private stateTimer: NodeJS.Timeout | undefined;
   private repoListeners: vscode.Disposable[] = [];
@@ -180,6 +181,15 @@ export class GraphController {
       return;
     }
     this.post({ type: 'reveal', hash });
+  }
+
+  searchFor(query: string): void {
+    this.host.reveal();
+    if (!this.ready) {
+      this.pendingSearch = query;
+      return;
+    }
+    this.post({ type: 'setSearch', query });
   }
 
   async runCommitAction(action: CommitAction, context: MenuContext): Promise<void> {
@@ -584,6 +594,10 @@ export class GraphController {
       if (!append && this.pendingReveal && this.ready) {
         this.post({ type: 'reveal', hash: this.pendingReveal });
         this.pendingReveal = null;
+      }
+      if (!append && this.pendingSearch && this.ready) {
+        this.post({ type: 'setSearch', query: this.pendingSearch });
+        this.pendingSearch = null;
       }
       this.requestAvatars(git.root, page.commits);
       this.postCachedStats(page.commits);

@@ -12,7 +12,15 @@ import type {
   WorkingDetails,
   WorktreeInfo,
 } from '../protocol';
-import { FIELD_SEPARATOR, GitOutputParser, HistoryEntry } from './GitOutputParser';
+import {
+  BranchSummary,
+  Contributor,
+  FIELD_SEPARATOR,
+  GitOutputParser,
+  HistoryEntry,
+  RemoteEntry,
+  TagSummary,
+} from './GitOutputParser';
 
 const LOG_FORMAT = ['%H', '%P', '%an', '%ae', '%at', '%ct', '%s', '%b'].join('%x1f') + '%x1e';
 const HISTORY_FORMAT = '%x1e' + ['%H', '%P', '%an', '%ae', '%at', '%s'].join('%x1f');
@@ -192,6 +200,33 @@ export class GitService {
   async getIncomingHashes(limit: number): Promise<string[]> {
     const output = await this.run(['rev-list', `--max-count=${limit}`, 'HEAD..@{upstream}']);
     return output.split('\n').filter(Boolean);
+  }
+
+  async getBranches(): Promise<BranchSummary[]> {
+    const fields = ['%(refname:short)', '%(objectname)', '%(upstream:short)', '%(upstream:track)', '%(committerdate:unix)', '%(contents:subject)', '%(HEAD)'];
+    const output = await this.run(['for-each-ref', '--sort=-committerdate', `--format=${fields.join('%1f')}`, 'refs/heads']);
+    return GitOutputParser.parseBranches(output);
+  }
+
+  async getRemoteBranches(remote: string): Promise<BranchSummary[]> {
+    const fields = ['%(refname:short)', '%(objectname)', '', '', '%(committerdate:unix)', '%(contents:subject)', ''];
+    const output = await this.run(['for-each-ref', '--sort=-committerdate', `--format=${fields.join('%1f')}`, `refs/remotes/${remote}`]);
+    return GitOutputParser.parseBranches(output).filter((branch) => !branch.name.endsWith('/HEAD'));
+  }
+
+  async getTags(): Promise<TagSummary[]> {
+    const fields = ['%(refname:short)', '%(objectname)', '%(*objectname)', '%(creatordate:unix)', '%(contents:subject)'];
+    const output = await this.run(['for-each-ref', '--sort=-creatordate', `--format=${fields.join('%1f')}`, 'refs/tags']);
+    return GitOutputParser.parseTags(output);
+  }
+
+  async getRemotes(): Promise<RemoteEntry[]> {
+    return GitOutputParser.parseRemotes(await this.run(['remote', '-v']));
+  }
+
+  async getContributors(): Promise<Contributor[]> {
+    const output = await this.run(['shortlog', '-sne', '--no-merges', 'HEAD']).catch(() => '');
+    return GitOutputParser.parseContributors(output);
   }
 
   async getStashes(): Promise<StashInfo[]> {

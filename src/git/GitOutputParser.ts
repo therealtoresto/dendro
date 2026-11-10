@@ -14,6 +14,36 @@ export const RECORD_SEPARATOR = '\x1e';
 
 const BODY_PREVIEW_LENGTH = 240;
 
+export interface BranchSummary {
+  name: string;
+  hash: string;
+  upstream?: string;
+  upstreamGone: boolean;
+  ahead: number;
+  behind: number;
+  date: number;
+  subject: string;
+  isCurrent: boolean;
+}
+
+export interface TagSummary {
+  name: string;
+  hash: string;
+  date: number;
+  subject: string;
+}
+
+export interface RemoteEntry {
+  name: string;
+  url: string;
+}
+
+export interface Contributor {
+  name: string;
+  email: string;
+  commits: number;
+}
+
 export interface HistoryEntry {
   hash: string;
   parents: string[];
@@ -123,6 +153,64 @@ export class GitOutputParser {
     }
 
     return entries;
+  }
+
+  // `for-each-ref --format=%(refname:short) %(objectname) %(upstream:short) %(upstream:track) %(committerdate:unix)
+  // %(contents:subject) %(HEAD)` (fields split by 0x1f) over refs/heads.
+  static parseBranches(output: string): BranchSummary[] {
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [name, hash, upstream, track, date, subject, head] = line.split(FIELD_SEPARATOR);
+        return {
+          name,
+          hash,
+          upstream: upstream || undefined,
+          upstreamGone: track === '[gone]',
+          ahead: GitOutputParser.readCount(track ?? '', /ahead (\d+)/),
+          behind: GitOutputParser.readCount(track ?? '', /behind (\d+)/),
+          date: Number(date),
+          subject,
+          isCurrent: head === '*',
+        };
+      });
+  }
+
+  // `for-each-ref --format=%(refname:short) %(objectname) %(*objectname) %(creatordate:unix) %(contents:subject)`
+  // over refs/tags; an annotated tag is peeled to its commit.
+  static parseTags(output: string): TagSummary[] {
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [name, hash, peeled, date, subject] = line.split(FIELD_SEPARATOR);
+        return { name, hash: peeled || hash, date: Number(date), subject };
+      });
+  }
+
+  // `remote -v`: "origin<tab>git@host:group/repo.git (fetch)"; one entry per remote, its fetch URL.
+  static parseRemotes(output: string): RemoteEntry[] {
+    const remotes: RemoteEntry[] = [];
+    for (const line of output.split('\n')) {
+      const match = /^(\S+)\t(\S+) \(fetch\)$/.exec(line);
+      if (match && !remotes.some((remote) => remote.name === match[1])) {
+        remotes.push({ name: match[1], url: match[2] });
+      }
+    }
+    return remotes;
+  }
+
+  // `shortlog -sne`: "   296<tab>Ann Lee <ann@x.io>".
+  static parseContributors(output: string): Contributor[] {
+    const contributors: Contributor[] = [];
+    for (const line of output.split('\n')) {
+      const match = /^\s*(\d+)\t(.*) <(.*)>$/.exec(line);
+      if (match) {
+        contributors.push({ name: match[2], email: match[3], commits: Number(match[1]) });
+      }
+    }
+    return contributors;
   }
 
   // `stash list --format=%H%x1f%P%x1f%gd%x1f%gs%x1f%ct`: a stash is a commit on top of the commit it was made on.

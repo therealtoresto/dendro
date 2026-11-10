@@ -165,3 +165,51 @@ describe('GitOutputParser stashes and worktrees', () => {
     ]);
   });
 });
+
+describe('GitOutputParser repository lists', () => {
+  it('reads branches with their upstream state and the current one', () => {
+    const output = [
+      ['main', 'aaa', 'origin/main', '[ahead 2, behind 3]', '1700000000', 'Fix', '*'].join(F),
+      ['old', 'bbb', 'origin/old', '[gone]', '1600000000', 'Old work', ' '].join(F),
+      ['local', 'ccc', '', '', '1650000000', 'Try', ' '].join(F),
+    ].join('\n');
+
+    const branches = GitOutputParser.parseBranches(output);
+
+    assert.deepEqual(
+      branches.map((branch) => [branch.name, branch.upstream, branch.ahead, branch.behind, branch.upstreamGone, branch.isCurrent]),
+      [
+        ['main', 'origin/main', 2, 3, false, true],
+        ['old', 'origin/old', 0, 0, true, false],
+        ['local', undefined, 0, 0, false, false],
+      ],
+    );
+  });
+
+  it('reads tags, peeling annotated ones to their commit', () => {
+    const output = [['v2', 'tagobj', 'commit2', '1700000000', 'Release 2'].join(F), ['v1', 'commit1', '', '1600000000', 'Init'].join(F)].join('\n');
+    assert.deepEqual(
+      GitOutputParser.parseTags(output).map((tag) => [tag.name, tag.hash]),
+      [
+        ['v2', 'commit2'],
+        ['v1', 'commit1'],
+      ],
+    );
+  });
+
+  it('reads remotes once each, by their fetch URL', () => {
+    const output = 'origin\tgit@example.com:team/app.git (fetch)\norigin\tgit@example.com:team/app.git (push)\nfork\thttps://example.com/me/app (fetch)\n';
+    assert.deepEqual(GitOutputParser.parseRemotes(output), [
+      { name: 'origin', url: 'git@example.com:team/app.git' },
+      { name: 'fork', url: 'https://example.com/me/app' },
+    ]);
+  });
+
+  it('reads contributors with their commit counts', () => {
+    const output = '   296\tAnn Lee <ann@x.io>\n    12\tBob Stone <bob@x.io>\n';
+    assert.deepEqual(GitOutputParser.parseContributors(output), [
+      { name: 'Ann Lee', email: 'ann@x.io', commits: 296 },
+      { name: 'Bob Stone', email: 'bob@x.io', commits: 12 },
+    ]);
+  });
+});

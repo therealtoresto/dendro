@@ -94,6 +94,11 @@ export class Toolbar {
     this.searchStatus.textContent = text;
   }
 
+  setSearch(query: string): void {
+    this.searchInput.value = query;
+    this.handlers.onSearchInput(query);
+  }
+
   focusSearch(): void {
     this.searchInput.focus();
     this.searchInput.select();
