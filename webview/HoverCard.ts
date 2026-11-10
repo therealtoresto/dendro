@@ -19,7 +19,7 @@ export interface HoverSubject {
 }
 
 const MAX_WIDTH = 540;
-const GAP = 6;
+const GAP = 2;
 const HIDE_GRACE_MS = 160;
 
 // The card shown while the pointer rests on a commit row: who, when, what the commit did to how many files, and
@@ -30,13 +30,17 @@ export class HoverCard {
   private info: CommitHoverInfo | null = null;
   private hideTimer: number | undefined;
 
-  constructor() {
+  // onPointerEnter lets the owner drop a pending switch to another row: the pointer passed that row on its way here.
+  constructor(private readonly onPointerEnter: () => void) {
     this.element = document.createElement('div');
     this.element.className = 'hover-card glass-strong';
     this.element.hidden = true;
     document.body.appendChild(this.element);
 
-    this.element.addEventListener('mouseenter', () => window.clearTimeout(this.hideTimer));
+    this.element.addEventListener('mouseenter', () => {
+      window.clearTimeout(this.hideTimer);
+      this.onPointerEnter();
+    });
     this.element.addEventListener('mouseleave', () => this.scheduleHide());
     this.element.addEventListener('click', (event) => {
       const copy = (event.target as HTMLElement).closest<HTMLElement>('[data-copy]');

@@ -26,6 +26,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 const MIN_SEARCH_LENGTH = 2;
 const MIN_DETAILS_WIDTH = 260;
 const DEFAULT_DETAILS_WIDTH = 400;
+const HOVER_SWITCH_MS = 300;
 // One huge import would flatten every other bar, so bars are scaled against at most this many changed lines.
 const LARGEST_CHANGE_CAP = 5000;
 
@@ -51,7 +52,7 @@ class GraphApp {
   private worktrees: WorktreeInfo[] = [];
   private hoverInfos = new Map<string, CommitHoverInfo>();
   private hoverTimer: number | undefined;
-  private readonly hoverCard = new HoverCard();
+  private readonly hoverCard = new HoverCard(() => window.clearTimeout(this.hoverTimer));
   private largestChange = 1;
   private columnWidths: ColumnWidths;
   private selectedKey: string | null;
@@ -277,14 +278,15 @@ class GraphApp {
     this.renderList();
   }
 
-  // A card already open follows the pointer to the next row at once; the first one waits for the hover delay.
+  // A card already open follows the pointer to another row after a short pause, so the pointer can cross the rows
+  // between it and the card; the first card waits for the hover delay.
   private onRowHover(key: string, row: DOMRect, pointerX: number): void {
     window.clearTimeout(this.hoverTimer);
     if (this.settings['graph.rowHover.enabled'] === false || key === WORKING_CHANGES_KEY || key.startsWith('stash:')) {
       this.hoverCard.scheduleHide();
       return;
     }
-    const delay = this.hoverCard.shownHash ? 0 : Number(this.settings['graph.rowHover.delayMs'] ?? 400);
+    const delay = this.hoverCard.shownHash ? HOVER_SWITCH_MS : Number(this.settings['graph.rowHover.delayMs'] ?? 400);
     this.hoverTimer = window.setTimeout(() => this.showHover(key, row, pointerX), delay);
   }
 
