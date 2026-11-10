@@ -4,6 +4,7 @@ import { AutoFetcher } from './AutoFetcher';
 import { AvatarService } from './AvatarService';
 import { BlameService } from './blame/BlameService';
 import { CommitDiffs } from './CommitDiffs';
+import { BlameCodeLens } from './editor/BlameCodeLens';
 import { BlameHovers } from './editor/BlameHovers';
 import { AnnotationKind, FileAnnotations } from './editor/FileAnnotations';
 import { LineBlame } from './editor/LineBlame';
@@ -45,6 +46,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const blame = new BlameService(api, avatars);
   const annotations = new FileAnnotations(blame, avatars);
   const lineBlame = new LineBlame(blame);
+  const codeLens = new BlameCodeLens(blame);
   const subscriptions = context.subscriptions;
 
   subscriptions.push(
@@ -66,6 +68,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     lineBlame,
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionContentProvider(api.git.path)),
     vscode.languages.registerHoverProvider({ scheme: 'file' }, new BlameHovers(blame, annotations)),
+    codeLens,
+    vscode.languages.registerCodeLensProvider({ scheme: 'file' }, codeLens),
     vscode.window.registerWebviewViewProvider(GraphViewProvider.viewId, new GraphViewProvider(context, api), {
       webviewOptions: { retainContextWhenHidden: true },
     }),

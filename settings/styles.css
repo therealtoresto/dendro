@@ -677,3 +677,15 @@ input[type='color'] {
 .pv-dates td {
   padding: 3px 18px 3px 0;
 }
+
+.pv-lens {
+  height: 18px;
+  padding-left: 56px;
+  font-family: var(--vscode-font-family);
+  font-size: 0.85em;
+  color: var(--vscode-editorCodeLens-foreground, var(--muted));
+}
+
+.pv-lens-indent {
+  padding-left: 72px;
+}

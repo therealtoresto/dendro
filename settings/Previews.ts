@@ -85,6 +85,8 @@ export class Previews {
         return Previews.renderInlineBlame(values, locale);
       case 'statusBar':
         return Previews.renderStatusBar(values, locale);
+      case 'codeLens':
+        return Previews.renderCodeLens(values, locale);
       case 'hovers':
         return Previews.renderHover(values, locale);
       case 'fileBlame':
@@ -168,6 +170,43 @@ export class Previews {
     const item = values['statusBar.enabled'] !== false ? `<span class="pv-status-item">⎇ ${text}</span>` : '';
     const left = values['statusBar.alignment'] === 'left';
     return `<div class="pv-statusbar"><span>⎇ main ↓16 ↑1</span>${left ? item : ''}<span class="pv-spacer"></span>${left ? '' : item}<span>Ln 3, Col 12</span></div>`;
+  }
+
+  private static renderCodeLens(values: SettingValues, locale: string): string {
+    if (values['codeLens.enabled'] === false) {
+      return '<div class="pv-empty">CodeLens is off.</div>';
+    }
+    const dates = Previews.createDates(values, locale);
+    const scopes = new Set(values['codeLens.scopes'] as string[]);
+    const describeLens = (author: string, time: number, authors: string) => {
+      const parts: string[] = [];
+      if (values['codeLens.recentChange'] !== false) {
+        parts.push(`⟲ ${author}, ${dates.formatAgoOrDate(time)}`);
+      }
+      if (values['codeLens.authors'] !== false) {
+        parts.push(`☺ ${authors}`);
+      }
+      return parts.join(' | ');
+    };
+    const renderLens = (text: string, indented: boolean) =>
+      text ? `<div class="pv-lens${indented ? ' pv-lens-indent' : ''}">${text}</div>` : '';
+
+    const commits = SAMPLE_COMMITS;
+    const lines: string[] = [];
+    if (scopes.has('file')) {
+      lines.push(renderLens(describeLens(commits[0].author, commits[0].time, '3 authors (Ann Lee and 2 others)'), false));
+    }
+    if (scopes.has('containers')) {
+      lines.push(renderLens(describeLens(commits[1].author, commits[1].time, '2 authors (Bob Stone and 1 other)'), false));
+    }
+    lines.push(`<div class="pv-code-line"><span class="pv-ln">1</span><span>${CODE_LINES[0].code}</span></div>`);
+    if (scopes.has('blocks')) {
+      lines.push(renderLens(describeLens(commits[2].author, commits[2].time, '1 author (You)'), true));
+    }
+    CODE_LINES.slice(1).forEach((line, index) => {
+      lines.push(`<div class="pv-code-line"><span class="pv-ln">${index + 2}</span><span>${line.code}</span></div>`);
+    });
+    return `<div class="pv-code">${lines.join('')}</div>`;
   }
 
   private static renderHover(values: SettingValues, locale: string): string {

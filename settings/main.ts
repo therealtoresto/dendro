@@ -14,6 +14,7 @@ const SECTION_ICONS: Record<string, string> = {
   graph: '<circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="6" r="1.5"/><path d="M4 5v6M12 7.5c0 2.5-8 1.5-8 3.5"/>',
   inlineBlame: '<path d="M2 4h7M2 8h5M2 12h7"/><path d="M11 8h3" stroke-dasharray="1 1.5"/>',
   statusBar: '<rect x="1.5" y="10" width="13" height="3.5" rx="1"/><path d="M4 11.75h3"/>',
+  codeLens: '<path d="M2 3.5h12M2 6.5h7" stroke-dasharray="1.5 1.2"/><path d="M2 10h12M2 13h9"/>',
   hovers: '<path d="M2.5 3h11v7h-6l-3 3v-3h-2z"/>',
   fileBlame: '<circle cx="8" cy="8" r="2"/><path d="M8 1.5V6M8 10v4.5"/>',
   fileChanges: '<path d="M4.5 2v12M11.5 2v12M2 5h5M9 11h5"/>',

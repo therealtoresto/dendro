@@ -750,6 +750,44 @@
         }
       },
       {
+        "title": "Dendro: CodeLens",
+        "properties": {
+          "dendro.codeLens.enabled": {
+            "description": "Show blame above code blocks",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.codeLens.recentChange": {
+            "description": "Latest change: who and when (click: the commit in the graph)",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.codeLens.authors": {
+            "description": "Authors: how many people wrote the block (click: the history of its lines)",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.codeLens.scopes": {
+            "description": "Show it above",
+            "default": [
+              "file",
+              "containers",
+              "blocks"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "file",
+                "containers",
+                "blocks"
+              ]
+            },
+            "uniqueItems": true
+          }
+        }
+      },
+      {
         "title": "Dendro: Hovers",
         "properties": {
           "dendro.hovers.enabled": {

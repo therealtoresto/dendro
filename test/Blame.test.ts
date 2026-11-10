@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { BlameParser, UNCOMMITTED_SHA } from '../src/blame/BlameParser';
+import { BlameSummary } from '../src/blame/BlameSummary';
 import { HeatmapScale, HEAT_LEVELS } from '../src/blame/HeatmapScale';
 
 const A = 'a'.repeat(40);
@@ -97,5 +98,52 @@ describe('HeatmapScale', () => {
       { hot: true, level: 0 },
     ]);
     assert.equal(HeatmapScale.getOpacity(0), 1);
+  });
+});
+
+describe('BlameSummary', () => {
+  it('finds the newest change and orders authors by their share of the lines', () => {
+    const blame = BlameParser.parse(PORCELAIN);
+
+    const summary = BlameSummary.summarize(blame, 0, 2, 'ann@x.io');
+
+    assert.equal(summary.latest?.sha, B);
+    assert.deepEqual(
+      summary.authors.map((author) => [author.name, author.lines]),
+      [
+        ['Ann Lee', 2],
+        ['Bob', 1],
+      ],
+    );
+  });
+
+  it('counts uncommitted lines as the newest change, written by the user', () => {
+    const blame = BlameParser.parse(PORCELAIN);
+
+    const summary = BlameSummary.summarize(blame, 0, 3, 'me@x.io');
+
+    assert.equal(summary.latest?.uncommitted, true);
+    assert.deepEqual(
+      summary.authors.map((author) => [author.name, author.lines]),
+      [
+        ['Ann Lee', 2],
+        ['Bob', 1],
+        ['You', 1],
+      ],
+    );
+  });
+
+  it('adds uncommitted lines to the committed lines of the same person', () => {
+    const blame = BlameParser.parse(PORCELAIN);
+
+    const summary = BlameSummary.summarize(blame, 0, 3, 'ann@x.io');
+
+    assert.deepEqual(
+      summary.authors.map((author) => [author.email, author.lines]),
+      [
+        ['ann@x.io', 3],
+        ['bob@x.io', 1],
+      ],
+    );
   });
 });
