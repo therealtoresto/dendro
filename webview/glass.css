@@ -352,3 +352,21 @@
     color: var(--fg);
   }
 }
+
+@layer glass {
+  .details-close {
+    border-radius: var(--glass-radius-pill);
+    transition: background-color 0.14s var(--ease-out), transform 0.16s var(--ease-spring);
+  }
+
+  .details-close:hover {
+    background: var(--glass-hover);
+    transform: rotate(90deg);
+  }
+
+  .action-hint {
+    position: fixed;
+    border-radius: var(--glass-radius-sm);
+    animation: glass-fade 0.14s var(--ease-out) both;
+  }
+}

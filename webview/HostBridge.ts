@@ -14,6 +14,7 @@ export interface SavedViewState {
   selectedKey?: string | null;
   columnWidths?: ColumnWidths;
   fileView?: 'list' | 'tree';
+  detailsHidden?: boolean;
 }
 
 export class HostBridge {

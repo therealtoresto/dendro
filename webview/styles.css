@@ -1622,3 +1622,64 @@ mark {
 .row.branch-dim {
   opacity: 0.3;
 }
+
+/* Hiding the details */
+
+.details {
+  position: relative;
+}
+
+.details-content {
+  display: contents;
+}
+
+.details-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.details-close:hover {
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--fg);
+}
+
+body.details-hidden .details,
+body.details-hidden .splitter {
+  display: none;
+}
+
+body:not(.details-hidden) .tool-details {
+  color: var(--fg);
+}
+
+body.details-hidden .tool-details {
+  color: var(--muted);
+}
+
+/* The hint over a row's buttons */
+
+.action-hint {
+  position: fixed;
+  z-index: 30;
+  padding: 3px 8px;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--border));
+  border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--bg));
+  color: var(--vscode-editorHoverWidget-foreground, var(--fg));
+  font-size: 0.9em;
+  white-space: nowrap;
+  pointer-events: none;
+}

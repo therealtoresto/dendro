@@ -19,6 +19,7 @@ import { GraphLayout, GraphLayoutResult, LayoutInput } from './GraphLayout';
 import { GraphRenderer } from './GraphRenderer';
 import { HostBridge } from './HostBridge';
 import { HoverCard } from './HoverCard';
+import { Icons } from './Icons';
 import { Toolbar } from './Toolbar';
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -75,7 +76,10 @@ class GraphApp {
       <main class="layout">
         <section class="list"></section>
         <div class="splitter" title="Drag to resize"></div>
-        <aside class="details glass"></aside>
+        <aside class="details glass">
+          <div class="details-content"></div>
+          <button class="details-close" title="Hide the details">${Icons.render('close')}</button>
+        </aside>
       </main>`;
 
     const viewState = HostBridge.readViewState();
@@ -88,6 +92,7 @@ class GraphApp {
       onSearchInput: (query) => this.onSearchInput(query),
       onSearchStep: (direction) => this.stepSearch(direction),
       onSearchClear: () => this.clearSearch(),
+      onToggleDetails: () => this.setDetailsHidden(!document.body.classList.contains('details-hidden')),
     });
     this.list = new CommitList(root.querySelector('.list')!, {
       onSelect: (key, compare) => this.onRowSelect(key, compare),
@@ -102,11 +107,13 @@ class GraphApp {
       onDropRef: (name, kind, targetKey) => this.dropRef(name, kind, targetKey),
       onScroll: () => this.hideHover(),
     });
-    this.details = new DetailsPanel(root.querySelector('.details')!, {
+    this.details = new DetailsPanel(root.querySelector('.details-content')!, {
       onSelectCommit: (hash) => this.selectCommitAnywhere(hash),
     });
 
     this.errorBar.addEventListener('click', () => (this.errorBar.hidden = true));
+    root.querySelector('.details-close')!.addEventListener('click', () => this.setDetailsHidden(true));
+    this.setDetailsHidden(viewState.detailsHidden === true);
     this.attachSplitter(root.querySelector('.splitter')!);
     window.addEventListener('message', (event: MessageEvent<HostMessage>) => this.onHostMessage(event.data));
     document.addEventListener('keydown', (event) => this.onKeyDown(event));
@@ -786,6 +793,11 @@ class GraphApp {
   private showError(message: string): void {
     this.errorBar.textContent = message;
     this.errorBar.hidden = false;
+  }
+
+  private setDetailsHidden(hidden: boolean): void {
+    document.body.classList.toggle('details-hidden', hidden);
+    HostBridge.saveViewState({ detailsHidden: hidden });
   }
 
   private attachSplitter(splitter: HTMLElement): void {

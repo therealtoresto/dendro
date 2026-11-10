@@ -19,7 +19,7 @@ const PATHS = {
   history: '<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/>',
   repo: '<path d="M3.5 13v-9.5a1 1 0 0 1 1-1h8v9h-8a1 1 0 0 0 0 2h8"/>',
   gear:
-    '<circle cx="8" cy="8" r="2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
+    '<path d="M6.76 2.85 L7.12 1.06 L8.88 1.06 L9.24 2.85 L10.77 3.48 L12.29 2.47 L13.53 3.71 L12.52 5.23 L13.15 6.76 L14.94 7.12 L14.94 8.88 L13.15 9.24 L12.52 10.77 L13.53 12.29 L12.29 13.53 L10.77 12.52 L9.24 13.15 L8.88 14.94 L7.12 14.94 L6.76 13.15 L5.23 12.52 L3.71 13.53 L2.47 12.29 L3.48 10.77 L2.85 9.24 L1.06 8.88 L1.06 7.12 L2.85 6.76 L3.48 5.23 L2.47 3.71 L3.71 2.47 L5.23 3.48z"/><circle cx="8" cy="8" r="2.2"/>',
   compare: '<circle cx="4.5" cy="4" r="1.5"/><circle cx="11.5" cy="12" r="1.5"/><path d="M4.5 5.5v7h5M11.5 10.5v-7h-5"/>',
   folder: '<path d="M1.5 4.5a1 1 0 0 1 1-1H6l1.5 1.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/>',
   folderOpen: '<path d="M1.5 12V4.5a1 1 0 0 1 1-1H6l1.5 1.5h5a1 1 0 0 1 1 1v1.5"/><path d="M1.5 12l2-5h11l-2 5z"/>',
@@ -31,6 +31,7 @@ const PATHS = {
   box: '<rect x="2.5" y="4.5" width="11" height="9" rx="1.5"/><path d="M2.5 7.5h11M6.5 10h3"/>',
   rings:
     '<circle cx="8" cy="8" r="6.5"/><circle cx="8.2" cy="8" r="4.2"/><circle cx="8.3" cy="8" r="2"/>',
+  sidePanel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10 2.5v11"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;
