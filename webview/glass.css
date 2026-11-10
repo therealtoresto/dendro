@@ -19,8 +19,7 @@
     z-index: 30;
   }
 
-  .tool,
-  .tool-select {
+  .tool {
     border-radius: var(--glass-radius-pill);
     transition:
       background-color 0.16s var(--ease-out),

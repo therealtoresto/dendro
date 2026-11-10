@@ -15,7 +15,6 @@ export class Toolbar {
   private readonly repoButton: HTMLButtonElement;
   private readonly branchButton: HTMLButtonElement;
   private readonly remoteButtons: RemoteButtons;
-  private readonly branchesSelect: HTMLSelectElement;
   private readonly searchInput: HTMLInputElement;
   private readonly searchStatus: HTMLElement;
 
@@ -26,11 +25,6 @@ export class Toolbar {
     element.innerHTML = `
       <button class="tool tool-repo" title="Choose repository">${Icons.render('repo')}<span class="tool-label"></span></button>
       <button class="tool tool-branch" title="Checkout another branch">${Icons.render('branch')}<span class="tool-label"></span></button>
-      <select class="tool tool-select branches-select" title="Which branches the graph shows">
-        <option value="all">All branches</option>
-        <option value="smart">Smart branches</option>
-        <option value="current">Current branch</option>
-      </select>
       <span class="tool-separator"></span>
       <span class="remote-buttons"></span>
       <button class="tool tool-refresh" title="Refresh">${Icons.render('refresh')}</button>
@@ -49,16 +43,12 @@ export class Toolbar {
     this.repoButton = element.querySelector('.tool-repo')!;
     this.branchButton = element.querySelector('.tool-branch')!;
     this.remoteButtons = new RemoteButtons(element.querySelector('.remote-buttons')!);
-    this.branchesSelect = element.querySelector('.branches-select')!;
     this.searchInput = element.querySelector('.search-input')!;
     this.searchStatus = element.querySelector('.search-status')!;
 
     this.repoButton.addEventListener('click', () => HostBridge.post({ type: 'pickRepo' }));
     this.branchButton.addEventListener('click', () => HostBridge.post({ type: 'pickBranch' }));
     element.querySelector('.tool-refresh')!.addEventListener('click', () => HostBridge.post({ type: 'refresh' }));
-    this.branchesSelect.addEventListener('change', () =>
-      HostBridge.post({ type: 'updateSetting', key: 'graph.showBranches', value: this.branchesSelect.value }),
-    );
     element.querySelector('.tool-settings')!.addEventListener('click', () => HostBridge.post({ type: 'openSettings' }));
     element.querySelector('.tool-insights')!.addEventListener('click', () => HostBridge.post({ type: 'openInsights' }));
     element.querySelector('.tool-details')!.addEventListener('click', () => handlers.onToggleDetails());
@@ -83,7 +73,6 @@ export class Toolbar {
       head.branch ?? (head.hash ? `detached at ${head.hash.slice(0, 7)}` : 'no commits');
 
     this.remoteButtons.render(state, dates);
-    this.branchesSelect.value = String(state.settings['graph.showBranches']);
   }
 
   setBusy(action: RemoteAction | null, automatic: boolean): void {

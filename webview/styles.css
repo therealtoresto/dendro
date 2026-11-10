@@ -1004,19 +1004,6 @@ mark {
   font-variant-numeric: tabular-nums;
 }
 
-.tool-select {
-  background: var(--vscode-dropdown-background, var(--vscode-input-background));
-  color: var(--vscode-dropdown-foreground, var(--fg));
-  border: 1px solid var(--vscode-dropdown-border, var(--border));
-  font: inherit;
-  padding: 0 6px;
-  outline: none;
-}
-
-.tool-select:focus {
-  border-color: var(--vscode-focusBorder);
-}
-
 .tool-settings {
   padding: 0 6px;
 }
