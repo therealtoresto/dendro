@@ -100,9 +100,11 @@ export class RefBadges {
       }),
     );
 
+    // A local branch wears a computer and a remote one a cloud, so "master" here and "master" on the server never
+    // look alike when they point at different commits.
     let icon = Icons.render('branch', 12);
-    if (badge.isCurrent) {
-      icon = Icons.render('check', 12);
+    if (ref.kind === 'head') {
+      icon = Icons.render(badge.isCurrent ? 'laptopCheck' : 'laptop', 12);
     } else if (ref.kind === 'remote') {
       icon = Icons.render('cloud', 12);
     } else if (ref.kind === 'tag') {
@@ -112,12 +114,13 @@ export class RefBadges {
     }
 
     let label = ref.name;
-    if (ref.kind === 'remote' && !options.showRemoteNames && ref.remote) {
-      label = ref.name.slice(ref.remote.length + 1);
-    }
-
     let remoteMark = '';
-    if (badge.remotes.length > 0) {
+    if (ref.kind === 'remote' && ref.remote) {
+      label = ref.name.slice(ref.remote.length + 1);
+      if (options.showRemoteNames) {
+        remoteMark = `<span class="badge-origin">${Format.escapeHtml(ref.remote)}</span>`;
+      }
+    } else if (badge.remotes.length > 0) {
       const names = options.showRemoteNames ? Format.escapeHtml(badge.remotes.join(' ')) : '';
       remoteMark = `<span class="badge-origin">${Icons.render('cloud', 11)}${names}</span>`;
     }
@@ -134,7 +137,8 @@ export class RefBadges {
       upstreamMark = `<span class="badge-upstream">${ahead}${behind}</span>`;
     }
 
-    const tooltipLines = [ref.name, ...badge.remotes.map((remote) => `${remote}/${ref.name}`), ...(badge.moreTags ?? [])];
+    const kindNote = ref.kind === 'head' ? ' (local branch)' : ref.kind === 'remote' ? ' (remote branch)' : '';
+    const tooltipLines = [`${ref.name}${kindNote}`, ...badge.remotes.map((remote) => `${remote}/${ref.name} (remote branch)`), ...(badge.moreTags ?? [])];
     if (ref.upstream) {
       tooltipLines.push(`tracks ${ref.upstream}: ${ref.ahead ?? 0} ahead, ${ref.behind ?? 0} behind`);
     }

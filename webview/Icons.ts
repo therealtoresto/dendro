@@ -32,6 +32,8 @@ const PATHS = {
   rings:
     '<circle cx="8" cy="8" r="6.5"/><circle cx="8.2" cy="8" r="4.2"/><circle cx="8.3" cy="8" r="2"/>',
   pulse: '<path d="M1.5 8.5h3l1.5-4 3 8 1.5-4h4"/>',
+  laptop: '<rect x="3" y="3" width="10" height="7.5" rx="1"/><path d="M1.5 12.5h13"/>',
+  laptopCheck: '<rect x="3" y="3" width="10" height="7.5" rx="1"/><path d="M1.5 12.5h13M6 6.8l1.4 1.4 2.6-2.7"/>',
   sidePanel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10 2.5v11"/>',
 } as const;
 

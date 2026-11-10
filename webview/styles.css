@@ -1725,3 +1725,7 @@ body.details-hidden .tool-details {
 .badge-more-tags {
   border-left-color: color-mix(in srgb, currentColor 35%, transparent);
 }
+
+.badge-remote .badge-origin {
+  border-left-color: color-mix(in srgb, currentColor 35%, transparent);
+}
