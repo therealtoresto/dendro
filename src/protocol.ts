@@ -56,6 +56,7 @@ export type CommitAction =
   | 'createBranch'
   | 'cherryPick'
   | 'revert'
+  | 'reword'
   | 'reset'
   | 'createTag'
   | 'mergeIntoCurrent'

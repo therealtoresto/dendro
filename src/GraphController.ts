@@ -228,6 +228,9 @@ export class GraphController {
       case 'revert':
         await this.actions.revert(target);
         break;
+      case 'reword':
+        await this.actions.reword(target, this.head.hash);
+        break;
       case 'reset':
         await this.actions.reset(target, this.head.branch);
         break;

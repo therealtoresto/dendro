@@ -138,6 +138,11 @@
         "category": "Dendro"
       },
       {
+        "command": "dendro.rewordCommit",
+        "title": "Edit Commit Message…",
+        "category": "Dendro"
+      },
+      {
         "command": "dendro.reset",
         "title": "Reset Current Branch to This Commit…",
         "category": "Dendro"
@@ -463,6 +468,11 @@
           "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
         },
         {
+          "command": "dendro.rewordCommit",
+          "group": "3_apply@2.5",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
           "command": "dendro.reset",
           "group": "3_apply@3",
           "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
@@ -679,6 +689,10 @@
         },
         {
           "command": "dendro.revert",
+          "when": "false"
+        },
+        {
+          "command": "dendro.rewordCommit",
           "when": "false"
         },
         {

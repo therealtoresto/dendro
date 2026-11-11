@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { promises as fs } from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { Repository } from './git/git';
 import { GitCommandError, GitService } from './git/GitService';
@@ -110,6 +114,86 @@ export class RepoActions {
       ['revert', '--no-edit', ...RepoActions.getMainlineArgs(target), target.hash],
       `Reverted ${RepoActions.shortHash(target.hash)}`,
     );
+  }
+
+  // The subject is edited and the body kept. The last commit is amended; an older one is reworded by a rebase that
+  // git runs without asking: its todo gets "reword" on the first line and the editor copies in the new message.
+  async reword(target: CommitTarget, headHash: string | null): Promise<void> {
+    const isHead = target.hash === headHash;
+    if (!isHead && !(await this.canRebaseFrom(target))) {
+      return;
+    }
+
+    const { message } = await this.git.getCommitDetails(target.hash);
+    const [subject, ...rest] = message.split('\n');
+    const body = rest.join('\n').trim();
+    const newSubject = await vscode.window.showInputBox({
+      title: `Edit the message of ${RepoActions.shortHash(target.hash)}`,
+      prompt: body ? 'The subject line; the rest of the message stays as it is.' : 'The commit message',
+      value: subject,
+      validateInput: (value) => (value.trim() ? null : 'Enter a message'),
+    });
+    if (!newSubject || newSubject.trim() === subject.trim()) {
+      return;
+    }
+    const newMessage = body ? `${newSubject.trim()}\n\n${body}\n` : `${newSubject.trim()}\n`;
+
+    const pushed = await this.isPushed(target.hash);
+    if (!isHead || pushed) {
+      const notes = [
+        isHead ? '' : 'The commits after it are replayed, so they get new SHAs too. Uncommitted changes are stashed for the time of it.',
+        pushed ? 'The commit is already pushed: the branch will need a force push.' : '',
+      ];
+      const confirmed = await RepoActions.confirm(
+        `Change the message of ${RepoActions.shortHash(target.hash)}?`,
+        notes.filter(Boolean).join(' '),
+        'Change Message',
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    if (isHead) {
+      const args = ['commit', '--amend', '--only', '--allow-empty', '-m', newSubject.trim(), ...(body ? ['-m', body] : [])];
+      await this.runLocal(args, `Changed the message of ${RepoActions.shortHash(target.hash)}`);
+      return;
+    }
+
+    const messageFile = path.join(os.tmpdir(), `dendro-message-${randomUUID()}.txt`);
+    await fs.writeFile(messageFile, newMessage, 'utf8');
+    const quotedFile = `"${messageFile.split(path.sep).join('/')}"`;
+    const base = target.parentCount ? `${target.hash}~1` : '--root';
+    try {
+      await this.runLocal(['rebase', '-i', '--autostash', base], `Changed the message of ${RepoActions.shortHash(target.hash)}`, {
+        GIT_SEQUENCE_EDITOR: 'sed -i.bak -e "1s/^[a-z]* /reword /"',
+        GIT_EDITOR: `cp ${quotedFile}`,
+      });
+    } finally {
+      await fs.rm(messageFile, { force: true });
+    }
+  }
+
+  // A rebase replays a straight line of commits: the commit has to be on the current branch, and neither it nor the
+  // commits after it may be merges, which a plain rebase would flatten.
+  private async canRebaseFrom(target: CommitTarget): Promise<boolean> {
+    if ((await this.tryGit(['merge-base', '--is-ancestor', target.hash, 'HEAD'])) !== null) {
+      void vscode.window.showWarningMessage('Dendro: only a commit of the current branch can get a new message.');
+      return false;
+    }
+    const merges = await this.git.run(['rev-list', '--merges', `${target.hash}~1..HEAD`]).catch(() => '');
+    if (target.parentCount > 1 || merges.trim()) {
+      void vscode.window.showWarningMessage(
+        'Dendro: there are merge commits from this commit on. Use "Interactive Rebase from Here…" to change its message.',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  private async isPushed(hash: string): Promise<boolean> {
+    const upstream = await this.git.run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}']).catch(() => '');
+    return Boolean(upstream.trim()) && (await this.tryGit(['merge-base', '--is-ancestor', hash, upstream.trim()])) === null;
   }
 
   async reset(target: CommitTarget, branch: string | null): Promise<void> {
@@ -366,9 +450,9 @@ export class RepoActions {
     });
   }
 
-  private async runLocal(args: string[], successMessage: string): Promise<void> {
+  private async runLocal(args: string[], successMessage: string, env: Record<string, string> = {}): Promise<void> {
     try {
-      await this.git.run(args);
+      await this.git.run(args, undefined, env);
       vscode.window.setStatusBarMessage(`$(check) Dendro: ${successMessage}`, 3000);
     } catch (error) {
       const message = RepoActions.readErrorMessage(error);

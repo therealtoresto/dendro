@@ -40,6 +40,7 @@ const COMMIT_ACTIONS: { action: CommitAction; icon: IconName; label: string; tit
   { action: 'createTag', icon: 'tag', label: 'Tag', title: 'Tag this commit' },
   { action: 'cherryPick', icon: 'cherry', label: 'Cherry-pick', title: 'Cherry-pick onto the current branch' },
   { action: 'revert', icon: 'undo', label: 'Revert', title: 'Revert this commit' },
+  { action: 'reword', icon: 'pencil', label: 'Reword', title: 'Edit the message of this commit' },
 ];
 
 // A long message folds to this many lines, so the changed files stay in view.

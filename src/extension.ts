@@ -30,6 +30,7 @@ const COMMIT_COMMANDS: Record<string, CommitAction> = {
   'dendro.createBranch': 'createBranch',
   'dendro.cherryPick': 'cherryPick',
   'dendro.revert': 'revert',
+  'dendro.rewordCommit': 'reword',
   'dendro.reset': 'reset',
   'dendro.createTag': 'createTag',
   'dendro.mergeIntoCurrent': 'mergeIntoCurrent',
