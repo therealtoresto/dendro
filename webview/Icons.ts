@@ -35,6 +35,8 @@ const PATHS = {
   laptop: '<rect x="3" y="3" width="10" height="7.5" rx="1"/><path d="M1.5 12.5h13"/>',
   laptopCheck: '<rect x="3" y="3" width="10" height="7.5" rx="1"/><path d="M1.5 12.5h13M6 6.8l1.4 1.4 2.6-2.7"/>',
   sidePanel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10 2.5v11"/>',
+  beaker: '<path d="M6 1.5h4M6.5 1.5v4.5L2.8 12.4a1.4 1.4 0 0 0 1.2 2.1h8a1.4 1.4 0 0 0 1.2-2.1L9.5 6V1.5"/><path d="M4.4 9.5h7.2"/>',
+  pencil: '<path d="M10.5 2.5l3 3-8 8H2.5v-3z"/><path d="M8.5 4.5l3 3"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;

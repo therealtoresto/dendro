@@ -52,9 +52,20 @@ const BY_NAME: Record<string, FileKind> = {
   'package.json': { label: 'NPM', color: '#cb3837' },
 };
 
+const TEST_COLOR = '#2ea043';
+
+// Test files by the naming rules of the common test runners: x.spec.ts, x.test.js, x_test.go, test_x.py, XTest.java,
+// and anything under __tests__.
+const TEST_NAME = /\.(spec|test|e2e-spec|e2e)\.[a-z0-9]+$|_(test|spec)\.[a-z0-9]+$|^test_.+\.py$/;
+const TEST_CLASS_NAME = /[a-z0-9](Test|Tests|Spec)\.(java|kt|cs|swift|scala|groovy)$/;
+
 // A small colored tag that says the kind of a file at a glance; unknown kinds get the plain file icon.
 export class FileIcons {
   static render(path: string): string {
+    if (FileIcons.isTest(path)) {
+      return `<span class="file-icon file-icon-test" style="--file-color:${TEST_COLOR}" title="Test file">${Icons.render('beaker', 11)}</span>`;
+    }
+
     const name = path.slice(path.lastIndexOf('/') + 1).toLowerCase();
     const extension = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
     const kind = BY_NAME[name] ?? BY_EXTENSION[extension];
@@ -63,6 +74,11 @@ export class FileIcons {
       return `<span class="file-icon file-icon-plain">${Icons.render('file', 13)}</span>`;
     }
     return `<span class="file-icon" style="--file-color:${kind.color}">${kind.label}</span>`;
+  }
+
+  static isTest(path: string): boolean {
+    const name = path.slice(path.lastIndexOf('/') + 1);
+    return TEST_NAME.test(name.toLowerCase()) || TEST_CLASS_NAME.test(name) || /(^|\/)__tests__\//.test(path);
   }
 
   static renderFolder(open: boolean): string {
