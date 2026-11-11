@@ -1491,9 +1491,6 @@ mark {
   justify-content: center;
   min-width: 22px;
   height: 15px;
-  padding: 0 3px;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--file-color) 22%, transparent);
   color: var(--file-color);
   font-size: 9px;
   font-weight: 800;
@@ -1502,7 +1499,6 @@ mark {
 }
 
 .file-icon-plain {
-  background: none;
   color: var(--muted);
 }
 

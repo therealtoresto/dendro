@@ -63,7 +63,7 @@ const TEST_CLASS_NAME = /[a-z0-9](Test|Tests|Spec)\.(java|kt|cs|swift|scala|groo
 export class FileIcons {
   static render(path: string): string {
     if (FileIcons.isTest(path)) {
-      return `<span class="file-icon file-icon-test" style="--file-color:${TEST_COLOR}" title="Test file">${Icons.render('beaker', 11)}</span>`;
+      return `<span class="file-icon file-icon-test" style="--file-color:${TEST_COLOR}" title="Test file">${Icons.render('beaker', 13)}</span>`;
     }
 
     const name = path.slice(path.lastIndexOf('/') + 1).toLowerCase();
