@@ -765,6 +765,7 @@ mark {
   display: flex;
   align-items: center;
   gap: 6px;
+  padding: 14px 30px 0 0;
   font-weight: 600;
   font-size: 1.05em;
   margin-bottom: 6px;
@@ -1622,7 +1623,8 @@ mark {
 
 .details-close {
   position: absolute;
-  top: 8px;
+  /* On the line of the Working Changes title. */
+  top: 11px;
   right: 8px;
   z-index: 6;
   display: inline-flex;
