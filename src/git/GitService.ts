@@ -302,6 +302,11 @@ export class GitService {
     );
   }
 
+  async getMergedBranches(base: string): Promise<Set<string>> {
+    const output = await this.run(['branch', '--merged', base, '--format=%(refname:short)']).catch(() => '');
+    return new Set(output.split('\n').filter(Boolean));
+  }
+
   async getDefaultBranch(): Promise<string | null> {
     const remoteHead = await this.readOptional(['symbolic-ref', '--short', '-q', 'refs/remotes/origin/HEAD']);
     if (remoteHead) {

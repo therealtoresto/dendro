@@ -367,6 +367,12 @@
         "icon": "$(search)"
       },
       {
+        "command": "dendro.repo.switchRepository",
+        "title": "Switch Repository…",
+        "category": "Dendro",
+        "icon": "$(repo)"
+      },
+      {
         "command": "dendro.repo.createBranch",
         "title": "Create Branch…",
         "category": "Dendro",
@@ -623,6 +629,11 @@
           "command": "dendro.repo.refresh",
           "group": "navigation@9",
           "when": "view =~ /^dendro\\.(branches|remotes|tags|stashes|worktrees|contributors)$/"
+        },
+        {
+          "command": "dendro.repo.switchRepository",
+          "group": "navigation@0",
+          "when": "view =~ /^dendro\\.(branches|remotes|tags|stashes|worktrees|contributors)$/ && dendro.multipleRepositories"
         },
         {
           "command": "dendro.repo.createBranch",

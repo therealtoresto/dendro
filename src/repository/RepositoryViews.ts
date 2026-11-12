@@ -4,13 +4,21 @@ import type { BlameService } from '../blame/BlameService';
 import { BlameText } from '../blame/BlameText';
 import { CommitDiffs } from '../CommitDiffs';
 import type { API, Repository } from '../git/git';
-import type { BranchSummary, Contributor, RemoteEntry, TagSummary } from '../git/GitOutputParser';
+import type { BranchSummary, Contributor, HistoryEntry, RemoteEntry, TagSummary } from '../git/GitOutputParser';
 import type { GitService } from '../git/GitService';
 import type { ChangedFile, RefInfo, StashInfo, WorktreeInfo } from '../protocol';
 import { RepoActions } from '../RepoActions';
 
+// The branch others are measured against: the remote one when there is one, since the local copy can be old.
+interface BaseBranch {
+  ref: string;
+  name: string;
+}
+
 type RepoNode =
-  | { kind: 'branch'; root: string; branch: BranchSummary }
+  | { kind: 'branch'; root: string; branch: BranchSummary; base: BaseBranch | null; merged: boolean }
+  | { kind: 'commitGroup'; root: string; label: string; icon: string; commits: HistoryEntry[]; total: number }
+  | { kind: 'commit'; root: string; commit: HistoryEntry }
   | { kind: 'remote'; root: string; remote: RemoteEntry }
   | { kind: 'remoteBranch'; root: string; remote: string; branch: BranchSummary }
   | { kind: 'tag'; root: string; tag: TagSummary }
@@ -24,6 +32,7 @@ type ViewId = 'branches' | 'remotes' | 'tags' | 'stashes' | 'worktrees' | 'contr
 
 const REFRESH_DELAY_MS = 500;
 const MAX_TAGS = 300;
+const GROUP_COMMITS = 50;
 
 // One tree per part of the repository; each reads the repository of the active editor (or the first one).
 class RepoTree implements vscode.TreeDataProvider<RepoNode> {
@@ -54,6 +63,9 @@ export class RepositoryViews implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
   private refreshTimer: NodeJS.Timeout | undefined;
   private repoListeners: vscode.Disposable[] = [];
+  // The repository the views show: the one of the last file opened, or the one picked by hand. A webview or an
+  // output panel in front keeps it, so the views do not jump to some other repository (a submodule) meanwhile.
+  private chosenRoot: string | undefined;
 
   constructor(
     private readonly api: API,
@@ -70,7 +82,10 @@ export class RepositoryViews implements vscode.Disposable {
     this.disposables.push(
       api.onDidOpenRepository(() => this.watchRepositories()),
       api.onDidCloseRepository(() => this.watchRepositories()),
-      vscode.window.onDidChangeActiveTextEditor(() => this.scheduleRefresh()),
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        this.followEditor(editor);
+        this.scheduleRefresh();
+      }),
       blame.avatars.onDidResolve(() => this.trees.get('contributors')?.refresh()),
       ...this.registerCommands(),
     );
@@ -88,6 +103,7 @@ export class RepositoryViews implements vscode.Disposable {
       listener.dispose();
     }
     this.repoListeners = this.api.repositories.map((repo) => repo.state.onDidChange(() => this.scheduleRefresh()));
+    void vscode.commands.executeCommand('setContext', 'dendro.multipleRepositories', this.api.repositories.length > 1);
     this.scheduleRefresh();
   }
 
@@ -104,10 +120,102 @@ export class RepositoryViews implements vscode.Disposable {
     }, REFRESH_DELAY_MS);
   }
 
+  private followEditor(editor: vscode.TextEditor | undefined): void {
+    const root = editor ? this.blame.findRoot(editor.document.uri) : undefined;
+    if (root && this.api.repositories.some((repo) => repo.rootUri.fsPath === root)) {
+      this.chosenRoot = root;
+    }
+  }
+
   private findRepository(): Repository | undefined {
-    const active = vscode.window.activeTextEditor?.document.uri;
-    const root = active ? this.blame.findRoot(active) : undefined;
-    return this.api.repositories.find((repo) => repo.rootUri.fsPath === root) ?? this.api.repositories[0];
+    if (!this.chosenRoot) {
+      this.followEditor(vscode.window.activeTextEditor);
+    }
+    const repos = this.api.repositories;
+    const folders = vscode.workspace.workspaceFolders ?? [];
+    return (
+      repos.find((repo) => repo.rootUri.fsPath === this.chosenRoot) ??
+      repos.find((repo) => folders.some((folder) => folder.uri.fsPath === repo.rootUri.fsPath)) ??
+      repos[0]
+    );
+  }
+
+  private async switchRepository(): Promise<void> {
+    const current = this.findRepository();
+    const items = this.api.repositories.map((repo) => ({
+      label: path.basename(repo.rootUri.fsPath),
+      description: repo.state.HEAD?.name ?? 'detached HEAD',
+      detail: repo.rootUri.fsPath,
+      root: repo.rootUri.fsPath,
+      picked: repo === current,
+    }));
+    const picked = await vscode.window.showQuickPick(items, { title: 'Show which repository?' });
+    if (picked) {
+      this.chosenRoot = picked.root;
+      this.scheduleRefresh();
+    }
+  }
+
+  private static async findBase(git: GitService): Promise<BaseBranch | null> {
+    const name = await git.getDefaultBranch();
+    if (!name) {
+      return null;
+    }
+    const remote = `origin/${name}`;
+    return { ref: (await git.resolveCommit(remote)) ? remote : name, name };
+  }
+
+  // What a branch holds apart from the rest: commits to push and to pull, the ones the base branch lacks and the
+  // ones it gained since. Each group lists the newest commits, so a long-lived branch still opens fast.
+  private async loadBranchGroups(git: GitService, node: Extract<RepoNode, { kind: 'branch' }>): Promise<RepoNode[]> {
+    const { root, branch, base } = node;
+    const groups: RepoNode[] = [];
+
+    if (branch.upstream && !branch.upstreamGone && (branch.ahead || branch.behind)) {
+      const sides = await git.getSideCommits(branch.name, branch.upstream, GROUP_COMMITS).catch(() => null);
+      if (sides && branch.ahead) {
+        groups.push({ kind: 'commitGroup', root, label: `${branch.ahead} to push`, icon: 'arrow-up', commits: sides.onlyLeft, total: branch.ahead });
+      }
+      if (sides && branch.behind) {
+        groups.push({ kind: 'commitGroup', root, label: `${branch.behind} to pull`, icon: 'arrow-down', commits: sides.onlyRight, total: branch.behind });
+      }
+    }
+
+    const isBase = base?.name === branch.name;
+    if (base && !isBase) {
+      const [counts, sides] = await Promise.all([
+        git.countSideCommits(base.ref, branch.name).catch(() => null),
+        git.getSideCommits(base.ref, branch.name, GROUP_COMMITS).catch(() => null),
+      ]);
+      if (counts && sides && counts.onlyRight) {
+        groups.push({
+          kind: 'commitGroup',
+          root,
+          label: `${counts.onlyRight} not in ${base.name}`,
+          icon: 'git-commit',
+          commits: sides.onlyRight,
+          total: counts.onlyRight,
+        });
+      }
+      if (counts && sides && counts.onlyLeft) {
+        groups.push({
+          kind: 'commitGroup',
+          root,
+          label: `${counts.onlyLeft} new in ${base.ref}`,
+          icon: 'git-pull-request',
+          commits: sides.onlyLeft,
+          total: counts.onlyLeft,
+        });
+      }
+    }
+
+    if (groups.length > 0) {
+      return groups;
+    }
+    if (isBase || !base) {
+      return [{ kind: 'note', text: branch.upstream ? `In step with ${branch.upstream}.` : 'No upstream to compare with.' }];
+    }
+    return [{ kind: 'note', text: `The same commits as ${base.ref}.` }];
   }
 
   private createActions(root: string): { git: GitService; actions: RepoActions; repo: Repository } | undefined {
@@ -132,6 +240,16 @@ export class RepositoryViews implements vscode.Disposable {
       const branches = await git.getRemoteBranches(node.remote.name).catch(() => []);
       return branches.map((branch) => ({ kind: 'remoteBranch', root, remote: node.remote.name, branch }));
     }
+    if (node?.kind === 'branch') {
+      return this.loadBranchGroups(git, node);
+    }
+    if (node?.kind === 'commitGroup') {
+      const commits: RepoNode[] = node.commits.map((commit) => ({ kind: 'commit', root: node.root, commit }));
+      if (node.total > node.commits.length) {
+        commits.push({ kind: 'note', text: `…and ${(node.total - node.commits.length).toLocaleString()} older` });
+      }
+      return commits;
+    }
     if (node?.kind === 'stash') {
       const details = await git.getCommitDetails(node.stash.hash).catch(() => null);
       return (details?.files ?? []).map((file) => ({ kind: 'stashFile', root, stash: node.stash, file }));
@@ -142,9 +260,19 @@ export class RepositoryViews implements vscode.Disposable {
 
     let nodes: RepoNode[] = [];
     switch (id) {
-      case 'branches':
-        nodes = (await git.getBranches().catch(() => [])).map((branch) => ({ kind: 'branch', root, branch }));
+      case 'branches': {
+        const [branches, base] = await Promise.all([git.getBranches().catch(() => []), RepositoryViews.findBase(git)]);
+        const merged = base ? await git.getMergedBranches(base.ref) : new Set<string>();
+        const current = branches.filter((branch) => branch.isCurrent);
+        nodes = [...current, ...branches.filter((branch) => !branch.isCurrent)].map((branch) => ({
+          kind: 'branch',
+          root,
+          branch,
+          base,
+          merged: !branch.isCurrent && branch.name !== base?.name && merged.has(branch.name),
+        }));
         break;
+      }
       case 'remotes':
         nodes = (await git.getRemotes().catch(() => [])).map((remote) => ({ kind: 'remote', root, remote }));
         break;
@@ -180,14 +308,32 @@ export class RepositoryViews implements vscode.Disposable {
 
       case 'branch': {
         const { branch } = node;
-        const item = new vscode.TreeItem(branch.name, None);
+        const item = new vscode.TreeItem(branch.name, vscode.TreeItemCollapsibleState.Collapsed);
         const sync = [branch.ahead ? `↑${branch.ahead}` : '', branch.behind ? `↓${branch.behind}` : ''].filter(Boolean).join(' ');
         const upstream = branch.upstreamGone ? 'upstream gone' : branch.upstream ? sync || '✓' : 'local only';
-        item.description = `${upstream} · ${dates.formatAgoOrDate(branch.date)}`;
-        item.iconPath = new vscode.ThemeIcon(branch.isCurrent ? 'check' : 'git-branch');
+        const merged = node.merged && node.base ? `merged into ${node.base.name} · ` : '';
+        item.description = `${merged}${upstream} · ${dates.formatAgoOrDate(branch.date)}`;
+        item.iconPath = new vscode.ThemeIcon(branch.isCurrent ? 'check' : node.merged ? 'git-merge' : 'git-branch');
         item.contextValue = branch.isCurrent ? 'dendro.branch.current' : 'dendro.branch';
         item.tooltip = RepositoryViews.buildTooltip(branch.name, branch.subject, dates.formatFull(branch.date), branch.upstream);
         item.command = { title: 'Show in graph', command: 'dendro.repo.showInGraph', arguments: [node] };
+        return item;
+      }
+
+      case 'commitGroup': {
+        const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Expanded);
+        item.iconPath = new vscode.ThemeIcon(node.icon);
+        return item;
+      }
+
+      case 'commit': {
+        const { commit } = node;
+        const item = new vscode.TreeItem(commit.subject, None);
+        item.description = `${commit.author} · ${dates.formatAgoOrDate(commit.date)}`;
+        item.iconPath = new vscode.ThemeIcon('git-commit');
+        item.contextValue = 'dendro.commit';
+        item.tooltip = RepositoryViews.buildTooltip(commit.hash.slice(0, 7), commit.subject, `${commit.author}, ${dates.formatFull(commit.date)}`);
+        item.command = { title: 'Show in graph', command: 'dendro.showCommit', arguments: [commit.hash, node.root] };
         return item;
       }
 
@@ -334,6 +480,7 @@ export class RepositoryViews implements vscode.Disposable {
         node.kind === 'contributor' ? vscode.commands.executeCommand('dendro.searchGraph', node.contributor.name) : undefined,
       ),
       vscode.commands.registerCommand('dendro.repo.createBranch', () => this.createBranch()),
+      vscode.commands.registerCommand('dendro.repo.switchRepository', () => this.switchRepository()),
       vscode.commands.registerCommand('dendro.repo.addWorktree', () => this.addWorktree()),
       vscode.commands.registerCommand('dendro.repo.stashSave', () => this.saveStash()),
     ];
