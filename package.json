@@ -4,6 +4,7 @@
   "description": "Reads your git tree like tree rings: commit graph, pull / push, the changes and files of every commit.",
   "version": "0.10.0",
   "publisher": "tarasbondaruk",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/therealtoresto/dendro.git"
