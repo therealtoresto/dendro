@@ -16,6 +16,7 @@ import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
 import { HistoryViews } from './history/HistoryViews';
 import { InsightsPanel } from './insights/InsightsPanel';
+import { OverviewView } from './overview/OverviewView';
 import { InteractiveRebase } from './rebase/InteractiveRebase';
 import { RebaseEditorProvider } from './rebase/RebaseEditorProvider';
 import { RepositoryViews } from './repository/RepositoryViews';
@@ -75,6 +76,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const annotations = new FileAnnotations(blame, avatars);
   const lineBlame = new LineBlame(blame);
   const codeLens = new BlameCodeLens(blame);
+  const repositoryViews = new RepositoryViews(api, blame);
+  const overview = new OverviewView(context, api, blame, repositoryViews);
   const subscriptions = context.subscriptions;
 
   const rootOfActiveEditor = () => {
@@ -105,7 +108,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const root = rootOfActiveEditor();
       return root ? InteractiveRebase.abort(blame.createGit(root)) : undefined;
     }),
-    new RepositoryViews(api, blame),
+    repositoryViews,
+    overview,
+    vscode.window.registerWebviewViewProvider(OverviewView.viewId, overview, { webviewOptions: { retainContextWhenHidden: true } }),
     new HistoryViews(blame),
     autoFetcher,
     avatars,

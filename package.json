@@ -373,12 +373,6 @@
         "icon": "$(repo)"
       },
       {
-        "command": "dendro.repo.createBranch",
-        "title": "Create Branch…",
-        "category": "Dendro",
-        "icon": "$(add)"
-      },
-      {
         "command": "dendro.repo.addWorktree",
         "title": "Add Worktree…",
         "category": "Dendro",
@@ -628,17 +622,12 @@
         {
           "command": "dendro.repo.refresh",
           "group": "navigation@9",
-          "when": "view =~ /^dendro\\.(branches|remotes|tags|stashes|worktrees|contributors)$/"
+          "when": "view =~ /^dendro\\.(remotes|tags|stashes|worktrees|contributors)$/"
         },
         {
           "command": "dendro.repo.switchRepository",
           "group": "navigation@0",
-          "when": "view =~ /^dendro\\.(branches|remotes|tags|stashes|worktrees|contributors)$/ && dendro.multipleRepositories"
-        },
-        {
-          "command": "dendro.repo.createBranch",
-          "group": "navigation@1",
-          "when": "view == dendro.branches"
+          "when": "view =~ /^dendro\\.(remotes|tags|stashes|worktrees|contributors)$/ && dendro.multipleRepositories"
         },
         {
           "command": "dendro.repo.addWorktree",
@@ -649,11 +638,6 @@
           "command": "dendro.repo.stashSave",
           "group": "navigation@1",
           "when": "view == dendro.stashes"
-        },
-        {
-          "command": "dendro.compare",
-          "group": "navigation@2",
-          "when": "view == dendro.branches"
         },
         {
           "command": "dendro.showInsights",
@@ -901,7 +885,7 @@
         {
           "command": "dendro.repo.checkout",
           "group": "inline@1",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch"
+          "when": "viewItem == dendro.remoteBranch"
         },
         {
           "command": "dendro.repo.showInGraph",
@@ -911,7 +895,7 @@
         {
           "command": "dendro.repo.checkout",
           "group": "1_checkout@1",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+          "when": "viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         },
         {
           "command": "dendro.repo.showInGraph",
@@ -921,27 +905,17 @@
         {
           "command": "dendro.repo.merge",
           "group": "2_integrate@1",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+          "when": "viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         },
         {
           "command": "dendro.repo.rebase",
           "group": "2_integrate@2",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
-        },
-        {
-          "command": "dendro.repo.push",
-          "group": "3_remote@1",
-          "when": "viewItem =~ /^dendro\\.branch/"
-        },
-        {
-          "command": "dendro.repo.rename",
-          "group": "4_edit@1",
-          "when": "viewItem =~ /^dendro\\.branch/"
+          "when": "viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         },
         {
           "command": "dendro.repo.delete",
           "group": "9_delete@1",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+          "when": "viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         },
         {
           "command": "dendro.repo.fetchRemote",
@@ -986,7 +960,7 @@
         {
           "command": "dendro.repo.compare",
           "group": "2_integrate@3",
-          "when": "viewItem == dendro.branch || viewItem == dendro.remoteBranch || viewItem == dendro.tag"
+          "when": "viewItem == dendro.remoteBranch || viewItem == dendro.tag"
         }
       ],
       "explorer/context": [
@@ -1769,8 +1743,9 @@
       ],
       "dendro-history": [
         {
-          "id": "dendro.branches",
-          "name": "Branches"
+          "type": "webview",
+          "id": "dendro.overview",
+          "name": "Overview"
         },
         {
           "id": "dendro.remotes",
@@ -1823,7 +1798,7 @@
   "scripts": {
     "build": "npm run sync-config && node esbuild.mjs",
     "watch": "node esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare && tsc --noEmit -p rebase && tsc --noEmit -p insights",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p webview && tsc --noEmit -p settings && tsc --noEmit -p history && tsc --noEmit -p compare && tsc --noEmit -p rebase && tsc --noEmit -p insights && tsc --noEmit -p overview",
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",

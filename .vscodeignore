@@ -15,4 +15,6 @@
 !dist/rebase.css
 !dist/insights.js
 !dist/insights.css
+!dist/overview.js
+!dist/overview.css
 !media/**

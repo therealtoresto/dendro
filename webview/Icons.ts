@@ -37,6 +37,11 @@ const PATHS = {
   sidePanel: '<rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M10 2.5v11"/>',
   beaker: '<path d="M6 1.5h4M6.5 1.5v4.5L2.8 12.4a1.4 1.4 0 0 0 1.2 2.1h8a1.4 1.4 0 0 0 1.2-2.1L9.5 6V1.5"/><path d="M4.4 9.5h7.2"/>',
   pencil: '<path d="M10.5 2.5l3 3-8 8H2.5v-3z"/><path d="M8.5 4.5l3 3"/>',
+  plus: '<path d="M8 3v10M3 8h10"/>',
+  trash: '<path d="M2.5 4.5h11M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M4 4.5l.7 8.6a1 1 0 0 0 1 .9h4.6a1 1 0 0 0 1-.9l.7-8.6"/>',
+  merge: '<circle cx="4.5" cy="3.5" r="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="9" r="1.5"/><path d="M4.5 5v6M4.5 5c0 3 2.5 4 5.5 4"/>',
+  archive: '<rect x="2" y="3" width="12" height="3" rx="0.8"/><path d="M3 6v6.5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6M6.5 9h3"/>',
+  graph: '<circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="8" r="1.5"/><path d="M4 5v6M10.5 8H8a4 4 0 0 1-4-3"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;

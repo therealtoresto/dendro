@@ -5,7 +5,7 @@ import type { AvatarService } from './AvatarService';
 import type { API, Repository } from './git/git';
 import { CommitOrder, GitService } from './git/GitService';
 import { RemoteUrl } from './git/RemoteUrl';
-import { FileChange, WorkingChangeCounter } from './git/WorkingChangeCounter';
+import { WorkingChangeCounter } from './git/WorkingChangeCounter';
 import type {
   ChangedFile,
   CommitAction,
@@ -515,16 +515,7 @@ export class GraphController {
   }
 
   private summarizeWorkingFiles(): WorkingSummary {
-    const state = this.repo?.state;
-    const toFileChanges = (changes: { uri: vscode.Uri; status: number }[] | undefined): FileChange[] =>
-      (changes ?? []).map((change) => ({ path: change.uri.fsPath, status: change.status }));
-
-    return WorkingChangeCounter.count({
-      merge: toFileChanges(state?.mergeChanges),
-      index: toFileChanges(state?.indexChanges),
-      workingTree: toFileChanges(state?.workingTreeChanges),
-      untracked: toFileChanges(state?.untrackedChanges),
-    });
+    return WorkingChangeCounter.countState(this.repo?.state);
   }
 
   // Line counts need a diff, so they are read only while there is something uncommitted.

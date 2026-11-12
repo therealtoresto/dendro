@@ -302,6 +302,10 @@ export class GitService {
     );
   }
 
+  async getRecentCommits(limit: number): Promise<HistoryEntry[]> {
+    return GitOutputParser.parseHistory(await this.run(['log', `--max-count=${limit}`, `--format=${HISTORY_FORMAT}`, 'HEAD', '--']));
+  }
+
   async getMergedBranches(base: string): Promise<Set<string>> {
     const output = await this.run(['branch', '--merged', base, '--format=%(refname:short)']).catch(() => '');
     return new Set(output.split('\n').filter(Boolean));

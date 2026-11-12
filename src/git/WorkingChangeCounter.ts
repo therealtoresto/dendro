@@ -38,7 +38,30 @@ export interface ChangeGroups {
 
 // One count per file, however many groups it is in: a file staged as new and edited again is one added file;
 // one staged as edited and then deleted on disk is one deleted file; a merge conflict outranks everything.
+interface StateChange {
+  uri: { fsPath: string };
+  status: number;
+}
+
 export class WorkingChangeCounter {
+  // The built-in Git extension's repository state, counted.
+  static countState(state: {
+    mergeChanges?: StateChange[];
+    indexChanges?: StateChange[];
+    workingTreeChanges?: StateChange[];
+    untrackedChanges?: StateChange[];
+  } | undefined): Omit<WorkingSummary, 'lines'> {
+    const toFileChanges = (changes: StateChange[] | undefined): FileChange[] =>
+      (changes ?? []).map((change) => ({ path: change.uri.fsPath, status: change.status }));
+
+    return WorkingChangeCounter.count({
+      merge: toFileChanges(state?.mergeChanges),
+      index: toFileChanges(state?.indexChanges),
+      workingTree: toFileChanges(state?.workingTreeChanges),
+      untracked: toFileChanges(state?.untrackedChanges),
+    });
+  }
+
   static count(groups: ChangeGroups): Omit<WorkingSummary, 'lines'> {
     const statusesByPath = new Map<string, number[]>();
     const conflicted = new Set(groups.merge.map((change) => change.path));
