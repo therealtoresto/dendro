@@ -1,5 +1,6 @@
-# A tag like v0.11.0 publishes that version: the tests and the typecheck run first, then the package goes to the
-# VS Code Marketplace and Open VSX (each only when its token is set) and to a GitHub release.
+# A tag like v0.12.1 publishes that version: the tests and the typecheck run first, then the package goes to the
+# VS Code Marketplace (trusted publishing: the Marketplace trusts this workflow, so no token is kept), to Open VSX
+# when its token is set, and to a GitHub release.
 name: Release
 
 on:
@@ -8,12 +9,13 @@ on:
 
 permissions:
   contents: write
+  # The OIDC token the Marketplace exchanges for a publish credential.
+  id-token: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      VSCE_PAT: ${{ secrets.VSCE_PAT }}
       OVSX_PAT: ${{ secrets.OVSX_PAT }}
     steps:
       - uses: actions/checkout@v4
@@ -32,9 +34,9 @@ jobs:
 
       - run: npm run package
 
+      # vsce 4 brings --oidc; the project keeps vsce 3 for packaging on older Node.
       - name: VS Code Marketplace
-        if: env.VSCE_PAT != ''
-        run: npx vsce publish --no-dependencies --packagePath dendro.vsix
+        run: npx -y @vscode/vsce@4.1.1 publish --oidc --no-dependencies --packagePath dendro.vsix
 
       - name: Open VSX
         if: env.OVSX_PAT != ''
