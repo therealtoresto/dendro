@@ -1,8 +1,21 @@
 @layer glass {
+  body {
+    background: var(--bg);
+  }
+
+  /* The same floating bar as the graph toolbar. */
+  #app {
+    padding: 10px 10px 0;
+  }
+
   .st-top {
-    background: var(--glass-sheen), var(--glass-fill-strong);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    padding: 6px 8px 6px 14px;
+    border-radius: var(--glass-radius-lg);
+    border-bottom: 1px solid var(--glass-edge-soft);
+    z-index: 30;
+  }
+
+  .st-board {
     border-bottom-color: var(--glass-edge-soft);
   }
 

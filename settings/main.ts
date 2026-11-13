@@ -50,7 +50,7 @@ class SettingsApp {
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <header class="st-top">
+      <header class="st-top glass">
         <div class="st-brand">${SettingsApp.renderSvg(DENDRO_MARK, 18)}<b>Dendro</b><span>settings</span></div>
         <label class="st-search">${SettingsApp.renderSvg(SEARCH_ICON, 14)}<input type="search" placeholder="Find a setting" spellcheck="false"></label>
         <a class="st-all" data-native-settings="dendro">Settings UI</a>
