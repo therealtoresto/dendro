@@ -21,7 +21,7 @@ export class BlameHovers implements vscode.HoverProvider {
     if (!info) {
       return null;
     }
-    const markdown = await BlameText.buildHover(this.blame, info, true);
+    const markdown = await BlameText.buildHover(this.blame, info, { changes: true, languageId: document.languageId });
     return new vscode.Hover(markdown, document.lineAt(position.line).range);
   }
 

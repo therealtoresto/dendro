@@ -120,6 +120,11 @@
         "category": "Dendro"
       },
       {
+        "command": "dendro.blameCard",
+        "title": "Blame Card Action",
+        "category": "Dendro"
+      },
+      {
         "command": "dendro.copySha",
         "title": "Copy Commit SHA",
         "category": "Dendro"
@@ -672,6 +677,10 @@
         },
         {
           "command": "dendro.statusBarAction",
+          "when": "false"
+        },
+        {
+          "command": "dendro.blameCard",
           "when": "false"
         },
         {
@@ -1349,6 +1358,16 @@
               "open the line's changes (diff)",
               "copy the commit SHA"
             ]
+          },
+          "dendro.statusBar.hover": {
+            "description": "Show the blame card when pointing at it. The same card as the editor hover, with the links and changes chosen under Hovers.",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.statusBar.hoverControls": {
+            "description": "Add switches for line blame, CodeLens and file annotations to the card",
+            "default": true,
+            "type": "boolean"
           }
         }
       },
@@ -1439,10 +1458,59 @@
             "default": true,
             "type": "boolean"
           },
-          "dendro.hovers.changes": {
-            "description": "Include the diff of the line",
+          "dendro.hovers.facts": {
+            "description": "Files and lines the commit changed",
             "default": true,
             "type": "boolean"
+          },
+          "dendro.hovers.actions": {
+            "description": "Links on the card",
+            "default": [
+              "changes",
+              "previous",
+              "graph",
+              "lineHistory",
+              "remote",
+              "copySha"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "changes",
+                "previous",
+                "graph",
+                "lineHistory",
+                "remote",
+                "copySha"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "dendro.hovers.changes": {
+            "description": "Include the lines the commit changed",
+            "default": true,
+            "type": "boolean"
+          },
+          "dendro.hovers.changesStyle": {
+            "description": "Show them as. Highlighted code colors the lines like the editor does, the old ones above the new ones.",
+            "default": "code",
+            "type": "string",
+            "enum": [
+              "code",
+              "diff"
+            ],
+            "enumDescriptions": [
+              "highlighted code",
+              "a plain diff"
+            ]
+          },
+          "dendro.hovers.changesLines": {
+            "description": "Most changed lines shown",
+            "default": 12,
+            "type": "number",
+            "minimum": 2,
+            "maximum": 60
           }
         }
       },

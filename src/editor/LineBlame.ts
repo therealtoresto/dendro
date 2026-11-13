@@ -108,7 +108,7 @@ export class LineBlame implements vscode.Disposable {
         renderOptions: { after: { contentText: text } },
       };
       if (hoverOnAnnotation) {
-        option.hoverMessage = await BlameText.buildHover(this.blame, info, true);
+        option.hoverMessage = await BlameText.buildHover(this.blame, info, { changes: true, languageId: editor.document.languageId });
       }
       editor.setDecorations(this.decoration, [option]);
     } else {
@@ -118,10 +118,10 @@ export class LineBlame implements vscode.Disposable {
     const statusText = statusEnabled
       ? BlameText.format(Settings.get<string>('statusBar.format'), info.commit, userEmail, dates)
       : '';
-    this.updateStatus(statusEnabled ? info : null, statusText);
+    this.updateStatus(statusEnabled ? info : null, statusText, editor.document.languageId);
   }
 
-  private updateStatus(info: LineBlameInfo | null, text: string): void {
+  private updateStatus(info: LineBlameInfo | null, text: string, languageId?: string): void {
     const alignment = Settings.get<string>('statusBar.alignment');
     if (!this.statusItem || this.statusAlignment !== alignment) {
       this.statusItem?.dispose();
@@ -143,12 +143,30 @@ export class LineBlame implements vscode.Disposable {
     this.statusItem.tooltip = new vscode.MarkdownString(
       `${info.commit.uncommitted ? 'Uncommitted changes' : info.commit.summary}\n\n_Click: ${LineBlame.describeCommand()}_`,
     );
+    if (Settings.get<boolean>('statusBar.hover')) {
+      void this.showStatusCard(info, languageId);
+    }
     this.statusItem.command = {
       title: 'Dendro blame',
       command: 'dendro.statusBarAction',
       arguments: [info.root, info.commit.sha, info.path, info.commit.uncommitted],
     };
     this.statusItem.show();
+  }
+
+  // The full card takes a few git calls, so the short tooltip stands until it is ready, and a card for a line the
+  // cursor has already left is dropped.
+  private async showStatusCard(info: LineBlameInfo, languageId: string | undefined): Promise<void> {
+    const card = await BlameText.buildHover(this.blame, info, {
+      changes: true,
+      languageId,
+      controls: Settings.get<boolean>('statusBar.hoverControls'),
+    }).catch(() => null);
+    if (!card || this.current !== info || !this.statusItem) {
+      return;
+    }
+    card.appendMarkdown(`\n\n_Click: ${LineBlame.describeCommand()}_`);
+    this.statusItem.tooltip = card;
   }
 
   private static describeCommand(): string {

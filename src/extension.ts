@@ -21,6 +21,8 @@ import { InteractiveRebase } from './rebase/InteractiveRebase';
 import { RebaseEditorProvider } from './rebase/RebaseEditorProvider';
 import { RepositoryViews } from './repository/RepositoryViews';
 import { RevisionContentProvider, REVISION_SCHEME } from './RevisionContentProvider';
+import { BlameCardActions } from './editor/BlameCardActions';
+import type { BlameCardAction, BlameCardTarget } from './blame/BlameText';
 import { Settings } from './Settings';
 import { SettingsPanel } from './SettingsPanel';
 
@@ -178,6 +180,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await vscode.env.clipboard.writeText(text);
       vscode.window.setStatusBarMessage('$(check) Dendro: copied', 2000);
     }),
+    vscode.commands.registerCommand('dendro.blameCard', (action: BlameCardAction | 'toggleSetting', target: BlameCardTarget) =>
+      BlameCardActions.run(blame, action, target),
+    ),
     vscode.commands.registerCommand('dendro.openLineChanges', (root: string, sha: string, filePath: string) =>
       CommitDiffs.openFileChange(blame.createGit(root), sha, filePath),
     ),

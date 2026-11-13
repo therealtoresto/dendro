@@ -5,8 +5,9 @@ import type { ChangedFile } from './protocol';
 import { RevisionContentProvider } from './RevisionContentProvider';
 
 export class CommitDiffs {
-  // What a commit changed in one file: its first parent's version against its own, following a rename.
-  static async openFileChange(git: GitService, sha: string, filePath: string, oldPath?: string): Promise<void> {
+  // What a commit changed in one file: its first parent's version against its own, following a rename. With a line
+  // (0-based, in the commit's version) the diff opens there.
+  static async openFileChange(git: GitService, sha: string, filePath: string, oldPath?: string, line?: number): Promise<void> {
     const details = await git.getCommitDetails(sha);
     const file = details.files.find((candidate) => candidate.path === filePath);
     const parent = details.parents[0] ?? null;
@@ -15,7 +16,8 @@ export class CommitDiffs {
     const left = RevisionContentProvider.buildUri(git.root, before, file?.status === 'A' ? null : parent);
     const right = RevisionContentProvider.buildUri(git.root, filePath, file?.status === 'D' ? null : sha);
     const title = `${path.basename(filePath)} (${parent ? parent.slice(0, 7) : 'root'} ↔ ${sha.slice(0, 7)})`;
-    await vscode.commands.executeCommand('vscode.diff', left, right, title, { preview: true });
+    const selection = line === undefined ? undefined : new vscode.Range(line, 0, line, 0);
+    await vscode.commands.executeCommand('vscode.diff', left, right, title, { preview: true, selection });
   }
 
   // One file between two revisions; a side without the file shows as empty.
@@ -25,8 +27,10 @@ export class CommitDiffs {
     await vscode.commands.executeCommand('vscode.diff', before, after, `${path.basename(file.path)} (${title})`, { preview: true });
   }
 
-  static async openRevision(root: string, sha: string, filePath: string): Promise<void> {
+  static async openRevision(root: string, sha: string, filePath: string, line?: number): Promise<void> {
     const document = await vscode.workspace.openTextDocument(RevisionContentProvider.buildUri(root, filePath, sha));
-    await vscode.window.showTextDocument(document, { preview: true });
+    const at = line === undefined ? undefined : Math.min(line, Math.max(0, document.lineCount - 1));
+    const selection = at === undefined ? undefined : new vscode.Range(at, 0, at, 0);
+    await vscode.window.showTextDocument(document, { preview: true, selection });
   }
 }

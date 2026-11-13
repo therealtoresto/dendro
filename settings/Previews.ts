@@ -29,6 +29,15 @@ const CODE_LINES = [
   { code: '}', commit: 3 },
 ];
 
+const HOVER_LINKS = [
+  { id: 'changes', icon: '◫', label: 'Changes' },
+  { id: 'previous', icon: '↶', label: 'Before' },
+  { id: 'graph', icon: '⎇', label: 'Graph' },
+  { id: 'lineHistory', icon: '☰', label: 'Line History' },
+  { id: 'remote', icon: '↗', label: 'Remote' },
+  { id: 'copySha', icon: '⧉', label: 'Copy SHA' },
+];
+
 export class Previews {
   static createDates(values: SettingValues, locale: string): DateFormatter {
     return new DateFormatter(
@@ -213,19 +222,42 @@ export class Previews {
     if (values['hovers.enabled'] === false) {
       return '<div class="pv-empty">Hovers are off.</div>';
     }
+    const card = Previews.renderCard(values, locale);
+    return card ? `<div class="pv-hover">${card}</div>` : '<div class="pv-hover"><span class="pv-muted">Nothing to show.</span></div>';
+  }
+
+  private static renderCard(values: SettingValues, locale: string): string {
     const dates = Previews.createDates(values, locale);
     const commit = SAMPLE_COMMITS[0];
-    const details =
-      values['hovers.details'] !== false
-        ? `<div><b>${commit.author}</b>, ${dates.formatAgo(commit.time)} <i class="pv-muted">(${dates.formatFull(commit.time)})</i></div>
-           <div class="pv-hover-message">${commit.message}</div>
-           <div class="pv-links"><a>⎇ ${commit.sha}</a> | <a>Open Changes</a> | <a>Copy SHA</a></div>`
-        : '';
-    const changes =
-      values['hovers.changes'] !== false
-        ? `<pre class="pv-diff"><span class="del">-    return years.length;</span>\n<span class="add">+    return years.filter((year) =&gt; year &gt; 0).length;</span></pre>`
-        : '';
-    return `<div class="pv-hover">${details}${changes || details ? '' : '<span class="pv-muted">Nothing to show.</span>'}${changes}</div>`;
+    const parts: string[] = [];
+
+    if (values['hovers.details'] !== false) {
+      const actions = new Set(Array.isArray(values['hovers.actions']) ? values['hovers.actions'].map(String) : []);
+      const links = HOVER_LINKS.filter((link) => actions.has(link.id))
+        .map((link) => `<a>${link.icon} ${link.label}</a>`)
+        .join('');
+      const facts =
+        values['hovers.facts'] !== false
+          ? `<div class="pv-facts"><code>${commit.sha}</code> · ▤ 3 files · <span class="add">+12</span> <span class="del">−4</span></div>`
+          : '';
+      parts.push(`
+        <div class="pv-card-head"><span class="pv-avatar small" style="background:${AvatarStyle.getColor(commit.email)}">${AvatarStyle.renderArt(commit.email)}</span>
+          <b>${commit.author}</b> · ${dates.formatAgo(commit.time)} <span class="pv-muted">${dates.formatFull(commit.time)}</span></div>
+        <div class="pv-hover-message"><b>${commit.message}</b></div>
+        <div class="pv-muted">Young trees have no rings yet, so a zero no longer counts.</div>
+        ${facts}
+        ${links ? `<div class="pv-links">${links}</div>` : ''}`);
+    }
+
+    if (values['hovers.changes'] !== false) {
+      parts.push(
+        values['hovers.changesStyle'] === 'diff'
+          ? `<pre class="pv-diff"><span class="del">-    return years.length;</span>\n<span class="add">+    return years.filter((year) =&gt; year &gt; 0).length;</span></pre>`
+          : `<div class="pv-side del">− before</div><pre class="pv-snippet"><k>return</k> years.length;</pre>
+             <div class="pv-side add">+ after</div><pre class="pv-snippet"><k>return</k> years.<f>filter</f>((year) =&gt; year &gt; 0).length;</pre>`,
+      );
+    }
+    return parts.join('<hr class="pv-rule">');
   }
 
   private static renderFileBlame(values: SettingValues, locale: string): string {
