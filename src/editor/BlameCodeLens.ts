@@ -63,7 +63,7 @@ export class BlameCodeLens implements vscode.CodeLensProvider<BlameLens>, vscode
   }
 
   async provideCodeLenses(document: vscode.TextDocument): Promise<BlameLens[]> {
-    if (!Settings.get<boolean>('codeLens.enabled') || !this.blame.findRoot(document.uri)) {
+    if (!Settings.get<boolean>('codeLens.enabled') || !this.blame.findBlameRoot(document.uri)) {
       return [];
     }
     // A file git does not know yet (or cannot blame) gets no lenses rather than empty ones.
@@ -90,7 +90,7 @@ export class BlameCodeLens implements vscode.CodeLensProvider<BlameLens>, vscode
 
   async resolveCodeLens(lens: BlameLens): Promise<BlameLens> {
     const blame = await this.blame.getBlame(lens.document);
-    const root = this.blame.findRoot(lens.document.uri);
+    const root = this.blame.findBlameRoot(lens.document.uri);
     if (!blame || !root) {
       lens.command = { title: '', command: '' };
       return lens;

@@ -87,7 +87,7 @@ export class FileAnnotations implements vscode.Disposable {
     if (!editor) {
       return;
     }
-    if (!this.blame.findRoot(editor.document.uri)) {
+    if (!this.blame.findBlameRoot(editor.document.uri)) {
       void vscode.window.showInformationMessage('Dendro: this file is not in a git repository.');
       return;
     }
@@ -175,7 +175,7 @@ export class FileAnnotations implements vscode.Disposable {
     }
 
     const blame = await this.blame.getBlame(editor.document);
-    const root = this.blame.findRoot(editor.document.uri);
+    const root = this.blame.findBlameRoot(editor.document.uri);
     if (!blame || !root || this.getKind(editor.document) !== kind) {
       return;
     }

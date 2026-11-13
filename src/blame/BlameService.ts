@@ -3,8 +3,16 @@ import * as vscode from 'vscode';
 import type { AvatarService } from '../AvatarService';
 import type { API } from '../git/git';
 import { GitService } from '../git/GitService';
+import { RemoteUrl } from '../git/RemoteUrl';
+import { RevisionContentProvider } from '../RevisionContentProvider';
 import { Settings } from '../Settings';
 import { BlameCommit, BlameParser, BlameResult } from './BlameParser';
+
+export interface CommitStats {
+  files: number;
+  added: number;
+  deleted: number;
+}
 
 export interface LineBlameInfo {
   root: string;
@@ -26,6 +34,8 @@ export class BlameService implements vscode.Disposable {
   private readonly userEmails = new Map<string, Promise<string | null>>();
   private readonly messages = new Map<string, Promise<string>>();
   private readonly unpushed = new Map<string, Promise<Set<string>>>();
+  private readonly stats = new Map<string, Promise<CommitStats | null>>();
+  private readonly webUrls = new Map<string, Promise<string | null>>();
   private readonly disposables: vscode.Disposable[] = [];
   private readonly changeEmitter = new vscode.EventEmitter<void>();
 
@@ -63,13 +73,28 @@ export class BlameService implements vscode.Disposable {
       .sort((left, right) => right.length - left.length)[0];
   }
 
+  // Where the blame of a document comes from: a file of a repository (no ref: the working tree), or a file as it
+  // was at a commit, which the diff editor shows, so blame keeps working while you walk from change to change.
+  locate(uri: vscode.Uri): { root: string; path: string; ref?: string } | null {
+    const revision = RevisionContentProvider.parseCommitUri(uri);
+    if (revision) {
+      return revision;
+    }
+    const root = this.findRoot(uri);
+    return root ? { root, path: BlameService.toGitPath(root, uri.fsPath) } : null;
+  }
+
+  findBlameRoot(uri: vscode.Uri): string | undefined {
+    return this.locate(uri)?.root;
+  }
+
   createGit(root: string): GitService {
     return new GitService(this.api.git.path, root);
   }
 
   getBlame(document: vscode.TextDocument): Promise<BlameResult | null> {
-    const root = this.findRoot(document.uri);
-    if (!root) {
+    const location = this.locate(document.uri);
+    if (!location) {
       return Promise.resolve(null);
     }
 
@@ -83,16 +108,17 @@ export class BlameService implements vscode.Disposable {
       return Promise.resolve(null);
     }
 
-    const relativePath = BlameService.toGitPath(root, document.uri.fsPath);
     const args = ['blame', '--porcelain'];
     let input: string | undefined;
-    if (document.isDirty) {
+    if (location.ref) {
+      args.push(location.ref);
+    } else if (document.isDirty) {
       args.push('--contents', '-');
       input = document.getText();
     }
-    args.push('--', relativePath);
+    args.push('--', location.path);
 
-    const result = this.createGit(root)
+    const result = this.createGit(location.root)
       .run(args, input)
       .then((output) => BlameParser.parse(output))
       .catch(() => null);
@@ -101,15 +127,15 @@ export class BlameService implements vscode.Disposable {
   }
 
   async getLineInfo(document: vscode.TextDocument, line: number): Promise<LineBlameInfo | null> {
-    const root = this.findRoot(document.uri);
+    const location = this.locate(document.uri);
     const blame = await this.getBlame(document);
     const entry = blame?.lines[line];
-    if (!root || !blame || !entry) {
+    if (!location || !blame || !entry) {
       return null;
     }
     return {
-      root,
-      path: BlameService.toGitPath(root, document.uri.fsPath),
+      root: location.root,
+      path: location.path,
       line,
       originalLine: entry.originalLine,
       commit: blame.commits.get(entry.sha)!,
@@ -151,6 +177,51 @@ export class BlameService implements vscode.Disposable {
       this.unpushed.set(root, shas);
     }
     return shas;
+  }
+
+  // How many files a commit changed and its added / deleted lines; a commit never changes, so it is read once.
+  getCommitStats(root: string, sha: string): Promise<CommitStats | null> {
+    const key = `${root}\0${sha}`;
+    let stats = this.stats.get(key);
+    if (!stats) {
+      stats = this.createGit(root)
+        .run(['diff-tree', '--no-commit-id', '--numstat', '-r', '--root', '-M', sha])
+        .then((output) => BlameService.parseNumstat(output))
+        .catch(() => null);
+      this.stats.set(key, stats);
+    }
+    return stats;
+  }
+
+  static parseNumstat(output: string): CommitStats {
+    const stats: CommitStats = { files: 0, added: 0, deleted: 0 };
+    for (const line of output.split('\n')) {
+      const match = /^(\d+|-)\t(\d+|-)\t/.exec(line);
+      if (!match) {
+        continue;
+      }
+      stats.files++;
+      stats.added += match[1] === '-' ? 0 : Number(match[1]);
+      stats.deleted += match[2] === '-' ? 0 : Number(match[2]);
+    }
+    return stats;
+  }
+
+  // The web page of a commit on the host of the repository's remote (origin first), or null with no such remote.
+  async getCommitWebUrl(root: string, sha: string): Promise<string | null> {
+    let base = this.webUrls.get(root);
+    if (!base) {
+      base = this.createGit(root)
+        .getRemotes()
+        .then((remotes) => {
+          const remote = remotes.find((candidate) => candidate.name === 'origin') ?? remotes[0];
+          return remote ? RemoteUrl.buildWebUrl(remote.url) : null;
+        })
+        .catch(() => null);
+      this.webUrls.set(root, base);
+    }
+    const url = await base;
+    return url ? RemoteUrl.buildCommitUrl(url, sha) : null;
   }
 
   // The lines of the commit's diff for this file around the blamed line, as "-old" / "+new" lines.

@@ -73,7 +73,7 @@ export class LineBlame implements vscode.Disposable {
     const inlineEnabled = Settings.get<boolean>('inlineBlame.enabled');
     const statusEnabled = Settings.get<boolean>('statusBar.enabled');
 
-    if (!editor || (!inlineEnabled && !statusEnabled) || !this.blame.findRoot(editor.document.uri)) {
+    if (!editor || (!inlineEnabled && !statusEnabled) || !this.blame.findBlameRoot(editor.document.uri)) {
       this.current = null;
       this.clear();
       this.updateStatus(null, '');

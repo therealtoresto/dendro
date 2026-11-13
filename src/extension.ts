@@ -128,9 +128,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     ),
     lineBlame,
     vscode.workspace.registerTextDocumentContentProvider(REVISION_SCHEME, new RevisionContentProvider(api.git.path)),
-    vscode.languages.registerHoverProvider({ scheme: 'file' }, new BlameHovers(blame, annotations)),
+    vscode.languages.registerHoverProvider([{ scheme: 'file' }, { scheme: REVISION_SCHEME }], new BlameHovers(blame, annotations)),
     codeLens,
-    vscode.languages.registerCodeLensProvider({ scheme: 'file' }, codeLens),
+    vscode.languages.registerCodeLensProvider([{ scheme: 'file' }, { scheme: REVISION_SCHEME }], codeLens),
     vscode.window.registerWebviewViewProvider(GraphViewProvider.viewId, new GraphViewProvider(context, api), {
       webviewOptions: { retainContextWhenHidden: true },
     }),

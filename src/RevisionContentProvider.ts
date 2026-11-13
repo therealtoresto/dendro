@@ -21,6 +21,19 @@ export class RevisionContentProvider implements vscode.TextDocumentContentProvid
     });
   }
 
+  // The repository and the commit a revision URI shows; null for an empty side or the index (ref '').
+  static parseCommitUri(uri: vscode.Uri): { root: string; ref: string; path: string } | null {
+    if (uri.scheme !== REVISION_SCHEME) {
+      return null;
+    }
+    try {
+      const query = JSON.parse(uri.query) as RevisionQuery;
+      return query.ref ? { root: query.root, ref: query.ref, path: uri.path.slice(1) } : null;
+    } catch {
+      return null;
+    }
+  }
+
   async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
     const query = JSON.parse(uri.query) as RevisionQuery;
     if (query.ref === null) {
