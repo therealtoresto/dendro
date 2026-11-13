@@ -432,11 +432,11 @@ export class FileAnnotations implements vscode.Disposable {
     const values = BlameText.buildValues(commit, context.userEmail, context.dates);
     const markdown = new vscode.MarkdownString('', true);
     markdown.isTrusted = true;
-    markdown.appendMarkdown(`$(account) **${values.author}**, ${values.ago} _(${values.date})_\n\n`);
+    markdown.appendMarkdown(`$(account)&nbsp;**${values.author}**, ${values.ago} _(${values.date})_\n\n`);
     markdown.appendText(values.message);
     if (!commit.uncommitted) {
       const show = BlameText.buildCommandLink('dendro.showCommit', [commit.sha, context.root]);
-      markdown.appendMarkdown(`\n\n[$(git-commit) ${values.sha}](${show} "Show in the Commit Graph")`);
+      markdown.appendMarkdown(`\n\n[$(git-commit)&nbsp;${values.sha}](${show} "Show in the Commit Graph")`);
     }
     return markdown;
   }

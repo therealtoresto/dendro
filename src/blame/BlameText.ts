@@ -120,7 +120,7 @@ export class BlameText {
       const stats = await blame.getCommitStats(info.root, commit.sha);
       const facts = [`\`${values.sha}\``];
       if (stats) {
-        facts.push(`$(files) ${stats.files} ${stats.files === 1 ? 'file' : 'files'}`);
+        facts.push(`$(files)&nbsp;${stats.files} ${stats.files === 1 ? 'file' : 'files'}`);
         facts.push(`${BlameText.color(`+${stats.added}`, ADDED_COLOR)} ${BlameText.color(`−${stats.deleted}`, DELETED_COLOR)}`);
       }
       lines.push(facts.join(' &nbsp;·&nbsp; '));
@@ -154,7 +154,7 @@ export class BlameText {
     if (chosen.has('remote')) {
       const url = await blame.getCommitWebUrl(info.root, commit.sha);
       if (url) {
-        links.push(`[$(link-external) Remote](${url} "Open the commit on ${new URL(url).host}")`);
+        links.push(`[$(link-external)&nbsp;Remote](${url} "Open the commit on ${new URL(url).host}")`);
       }
     }
     if (chosen.has('copySha')) {
@@ -189,10 +189,10 @@ export class BlameText {
   private static buildControls(): string {
     const toggle = (key: string, label: string) => {
       const isOn = Settings.get<boolean>(key);
-      return `[$(${isOn ? 'pass-filled' : 'circle-large-outline'}) ${label}](${BlameText.buildCommandLink('dendro.blameCard', ['toggleSetting', { key }])} "${isOn ? 'Turn off' : 'Turn on'}")`;
+      return `[$(${isOn ? 'pass-filled' : 'circle-large-outline'})&nbsp;${label}](${BlameText.buildCommandLink('dendro.blameCard', ['toggleSetting', { key }])} "${isOn ? 'Turn off' : 'Turn on'}")`;
     };
     const command = (icon: string, label: string, id: string, title: string) =>
-      `[$(${icon}) ${label}](${BlameText.buildCommandLink(id, [])} "${title}")`;
+      `[$(${icon})&nbsp;${label}](${BlameText.buildCommandLink(id, [])} "${title}")`;
 
     return [
       [toggle('inlineBlame.enabled', 'Line blame'), toggle('codeLens.enabled', 'CodeLens'), toggle('hovers.enabled', 'Hovers')].join(' &nbsp;&nbsp; '),
@@ -216,8 +216,9 @@ export class BlameText {
     };
   }
 
+  // A codicon swallows the plain space after it in a hover, so the label is joined with a no-break space.
   private static buildLink(icon: string, label: string, title: string, action: BlameCardAction, target: BlameCardTarget): string {
-    return `[$(${icon}) ${label}](${BlameText.buildCommandLink('dendro.blameCard', [action, target])} "${title}")`;
+    return `[$(${icon})&nbsp;${label}](${BlameText.buildCommandLink('dendro.blameCard', [action, target])} "${title}")`;
   }
 
   private static fence(code: string, language: string): string {
