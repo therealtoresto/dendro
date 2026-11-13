@@ -5,6 +5,10 @@
   "version": "0.10.2",
   "publisher": "tarasbondaruk",
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1b1f24",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/therealtoresto/dendro.git"
@@ -13,8 +17,10 @@
   "bugs": {
     "url": "https://github.com/therealtoresto/dendro/issues"
   },
+  "qna": "https://github.com/therealtoresto/dendro/issues",
   "license": "MIT",
   "private": true,
+  "pricing": "Free",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -25,9 +31,14 @@
   "keywords": [
     "git",
     "graph",
+    "commit graph",
+    "blame",
     "history",
     "log",
-    "commits"
+    "branches",
+    "rebase",
+    "diff",
+    "heatmap"
   ],
   "extensionDependencies": [
     "vscode.git"
@@ -1803,13 +1814,16 @@
     "test": "node --import tsx --test test/*.test.ts",
     "package": "npm run build && vsce package --no-dependencies -o dendro.vsix",
     "install-cursor": "npm run package && cursor --install-extension dendro.vsix --force",
-    "sync-config": "tsx scripts/syncConfig.ts"
+    "sync-config": "tsx scripts/syncConfig.ts",
+    "publish:vscode": "npm run package && vsce publish --no-dependencies --packagePath dendro.vsix",
+    "publish:openvsx": "npm run package && ovsx publish dendro.vsix"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.0",
+    "ovsx": "^1.1.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

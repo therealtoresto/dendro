@@ -1,0 +1,46 @@
+# A tag like v0.11.0 publishes that version: the tests and the typecheck run first, then the package goes to the
+# VS Code Marketplace and Open VSX (each only when its token is set) and to a GitHub release.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+      - name: Check the tag matches package.json
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - run: npm run package
+
+      - name: VS Code Marketplace
+        if: env.VSCE_PAT != ''
+        run: npx vsce publish --no-dependencies --packagePath dendro.vsix
+
+      - name: Open VSX
+        if: env.OVSX_PAT != ''
+        run: npx ovsx publish dendro.vsix
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dendro.vsix --title "$GITHUB_REF_NAME" --notes "See CHANGELOG.md."
