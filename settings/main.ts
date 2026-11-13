@@ -43,6 +43,7 @@ class SettingsApp {
   private locale = 'en-US';
   private sectionId: string;
   private query = '';
+  private shownView = '';
   private textTimer: number | undefined;
   private readonly search: HTMLInputElement;
   private readonly content: HTMLElement;
@@ -122,13 +123,20 @@ class SettingsApp {
     this.render();
   }
 
+  // The board stays put and only the part below it scrolls, so every tile is in sight at any scroll position.
+  // A re-render after a changed value keeps the scroll position; opening another section starts at the top.
   private render(): void {
+    const view = this.query ? `search:${this.query}` : this.sectionId;
+    const scrollTop = view === this.shownView ? (this.content.querySelector('.st-scroll')?.scrollTop ?? 0) : 0;
+    this.shownView = view;
+
     if (this.query) {
-      this.content.innerHTML = this.renderResults();
-      return;
+      this.content.innerHTML = `<div class="st-scroll">${this.renderResults()}</div>`;
+    } else {
+      const section = SETTINGS_SECTIONS.find((candidate) => candidate.id === this.sectionId) ?? SETTINGS_SECTIONS[0];
+      this.content.innerHTML = `${this.renderBoard()}<div class="st-scroll">${this.renderSection(section)}</div>`;
     }
-    const section = SETTINGS_SECTIONS.find((candidate) => candidate.id === this.sectionId) ?? SETTINGS_SECTIONS[0];
-    this.content.innerHTML = this.renderBoard() + this.renderSection(section);
+    this.content.querySelector('.st-scroll')!.scrollTop = scrollTop;
   }
 
   private renderBoard(): string {
