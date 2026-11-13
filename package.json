@@ -1393,7 +1393,7 @@
             "type": "boolean"
           },
           "dendro.hovers.currentLine.over": {
-            "description": "Shown when over the",
+            "description": "Opens when the pointer is on",
             "default": "annotation",
             "type": "string",
             "enum": [
@@ -1411,7 +1411,7 @@
             "type": "boolean"
           },
           "dendro.hovers.annotations.over": {
-            "description": "Shown when over the",
+            "description": "Opens when the pointer is on",
             "default": "line",
             "type": "string",
             "enum": [

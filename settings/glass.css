@@ -1,112 +1,92 @@
 @layer glass {
-  body {
-    background: var(--bg);
+  .st-top {
+    background: var(--glass-sheen), var(--glass-fill-strong);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    border-bottom-color: var(--glass-edge-soft);
   }
 
-  #app {
-    gap: 12px;
-    padding: 12px;
+  .st-search {
+    border-radius: var(--glass-radius-pill);
+    background: color-mix(in srgb, var(--vscode-input-background) 65%, transparent);
+    transition: box-shadow 0.16s var(--ease-out);
   }
 
-  .nav {
-    border-radius: var(--glass-radius-lg);
-    border-right: none;
+  .st-search:focus-within {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-accent) 26%, transparent);
   }
 
-  .nav-link {
-    border-radius: var(--glass-radius-sm);
-    transition: background-color 0.16s var(--ease-out), transform 0.16s var(--ease-spring);
+  .st-tile {
+    border-radius: var(--glass-radius-md);
+    border-color: var(--glass-edge-soft);
+    transition: background-color 0.16s var(--ease-out), transform 0.16s var(--ease-spring), box-shadow 0.16s var(--ease-out);
   }
 
-  .nav-link:hover {
+  .st-tile:hover {
     background: var(--glass-hover);
-    transform: translateX(2px);
+    transform: translateY(-1px);
   }
 
-  .nav-link.active {
-    background: var(--glass-sheen), color-mix(in srgb, var(--glass-accent) 30%, transparent);
-    box-shadow: inset 0 1px 0 var(--glass-edge), 0 4px 12px color-mix(in srgb, var(--glass-accent) 20%, transparent);
-    color: var(--fg);
+  .st-tile.active {
+    background: var(--glass-sheen), color-mix(in srgb, var(--glass-accent) 18%, transparent);
+    box-shadow: inset 0 1px 0 var(--glass-edge), 0 6px 16px color-mix(in srgb, var(--glass-accent) 18%, transparent);
   }
 
-  .content {
-    padding: 14px 18px 40px;
-  }
-
-  .section-icon {
-    border-radius: 12px;
-    background: var(--glass-sheen), color-mix(in srgb, var(--glass-accent) 22%, transparent);
-    box-shadow: inset 0 1px 0 var(--glass-edge);
-  }
-
-  .preview {
-    margin: 0 0 18px;
-    padding: 14px 18px 18px;
+  .st-detail {
     border-radius: var(--glass-radius-lg);
-    border: 1px solid var(--glass-edge-soft);
+    border-color: var(--glass-edge-soft);
+    background: var(--glass-sheen), var(--glass-fill);
+    box-shadow: var(--glass-shadow);
     animation: glass-fade 0.24s var(--ease-out) both;
   }
 
-  .items {
-    max-width: none;
-    padding: 18px 20px;
-    border-radius: var(--glass-radius-lg);
-    animation: glass-fade 0.28s var(--ease-out) both;
+  .st-stage {
+    border-color: var(--glass-edge-soft);
   }
 
+  .st-switch i {
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .st-switch i::after {
+    transition: transform 0.18s var(--ease-spring);
+  }
+
+  .st-segmented {
+    border-radius: var(--glass-radius-pill);
+  }
+
+  .st-segmented button {
+    border-radius: var(--glass-radius-pill);
+    transition: background-color 0.16s var(--ease-out);
+  }
+
+  .st-segmented button.active {
+    background: var(--glass-sheen), var(--glass-fill-strong);
+  }
+
+  select,
   input[type='text'],
-  input[type='number'],
-  select {
+  input[type='number'] {
     border-radius: var(--glass-radius-sm);
     background: color-mix(in srgb, var(--vscode-input-background) 65%, transparent);
     transition: box-shadow 0.16s var(--ease-out);
   }
 
-  input:focus,
-  select:focus {
+  select:focus,
+  input[type='text']:focus,
+  input[type='number']:focus {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--glass-accent) 26%, transparent);
   }
 
-  .segmented {
-    border-radius: var(--glass-radius-pill);
-    padding: 2px;
-    gap: 2px;
-    background: color-mix(in srgb, var(--fg) 6%, transparent);
-    border-color: var(--glass-edge-soft);
-  }
-
-  .segmented button {
-    border-radius: var(--glass-radius-pill);
+  .st-flag {
+    border-radius: var(--glass-radius-sm);
     transition: background-color 0.16s var(--ease-out);
-  }
-
-  .segmented button.active {
-    background: var(--glass-sheen), var(--accent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
-  }
-
-  .card {
-    border-radius: var(--glass-radius-md);
-    background: color-mix(in srgb, var(--fg) 3%, transparent);
-    transition: transform 0.16s var(--ease-spring), border-color 0.16s var(--ease-out), background-color 0.16s var(--ease-out);
-  }
-
-  .card:hover {
-    transform: translateY(-2px);
-  }
-
-  .card.checked {
-    background: var(--glass-sheen), color-mix(in srgb, var(--focus) 16%, transparent);
-    box-shadow: inset 0 1px 0 var(--glass-edge);
   }
 
   .pv-graph,
   .pv-code,
   .pv-hover {
     border-radius: var(--glass-radius-md);
-  }
-
-  .section-footer {
-    border-top: none;
   }
 }
