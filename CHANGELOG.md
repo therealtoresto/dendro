@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0
+
+- Working Changes: discard the changes of a file from its row or its right-click menu, or all changes at once from
+  the panel header or the right-click menu of the Working Changes row. Untracked files go to the Trash.
+
 ## 0.12.1
 
 First public release.
