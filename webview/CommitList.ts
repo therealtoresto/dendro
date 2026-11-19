@@ -325,7 +325,8 @@ export class CommitList {
     }
 
     if (!commit) {
-      return `<div class="${classes.join(' ')} working" ${top} data-key="${WORKING_CHANGES_KEY}">${cellsHtml}</div>`;
+      const context = Format.escapeHtml(JSON.stringify({ webviewSection: 'working', preventDefaultContextMenuItems: true }));
+      return `<div class="${classes.join(' ')} working" ${top} data-key="${WORKING_CHANGES_KEY}" data-vscode-context="${context}">${cellsHtml}</div>`;
     }
 
     if (commit.hash === model.headHash) {

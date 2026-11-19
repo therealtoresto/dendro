@@ -238,7 +238,9 @@ export class DetailsPanel {
         </div>
         <div class="details-muted details-working-note">Uncommitted changes in the working tree. Stage and commit them from Source Control.</div>
         <div class="files-section">
-          <div class="files-header"><span>Files</span><span class="files-count">${this.entries.length}</span>${this.renderViewSwitch()}</div>
+          <div class="files-header"><span>Files</span><span class="files-count">${this.entries.length}</span>${this.renderViewSwitch()}
+            <button class="icon-button files-discard" data-action="discard-all" title="Discard all changes…">${Icons.render('undo', 13)}</button>
+          </div>
           <input class="files-filter" type="text" placeholder="Filter files…" value="${Format.escapeHtml(this.filterText)}" spellcheck="false">
           <div class="files-list"></div>
         </div>
@@ -325,9 +327,26 @@ export class DetailsPanel {
       (this.shown.kind === 'commit' || this.shown.kind === 'comparison') && file.status !== 'D'
         ? `<button class="icon-button" data-action="open-revision" data-index="${index}" title="Open the file as of this commit">${Icons.render('history', 13)}</button>`
         : '';
+    const isWorking = this.shown.kind === 'working';
+    // A conflict is settled in the merge editor, not thrown away from a list.
+    const discard =
+      isWorking && file.status !== 'U'
+        ? `<button class="icon-button" data-action="discard" data-index="${index}" title="${file.status === '?' ? 'Move the file to the Trash…' : 'Discard the changes…'}">${Icons.render(file.status === '?' ? 'trash' : 'undo', 13)}</button>`
+        : '';
+    const menu = isWorking
+      ? ` data-vscode-context="${Format.escapeHtml(
+          JSON.stringify({
+            webviewSection: 'workingFile',
+            filePath: file.path,
+            fileStaged: this.entries[index].staged,
+            fileStatus: file.status,
+            preventDefaultContextMenuItems: true,
+          }),
+        )}"`
+      : '';
 
     return `
-      <div class="file-row" data-action="diff" data-index="${index}" style="--depth:${depth}" title="${Format.escapeHtml(renamedFrom + file.path)}">
+      <div class="file-row" data-action="diff" data-index="${index}" style="--depth:${depth}" title="${Format.escapeHtml(renamedFrom + file.path)}"${menu}>
         ${FileIcons.render(file.path)}
         <span class="file-name">${Format.escapeHtml(name)}</span>
         <span class="file-folder">${withFolder ? Format.escapeHtml(folder) : ''}</span>
@@ -335,6 +354,7 @@ export class DetailsPanel {
         <span class="file-actions">
           ${atRevision}
           <button class="icon-button" data-action="open-file" data-index="${index}" title="Open the working file">${Icons.render('file', 13)}</button>
+          ${discard}
         </span>
         <span class="file-status status-${file.status === '?' ? 'untracked' : file.status}" title="${STATUS_NAMES[file.status]}">${file.status === '?' ? 'U' : file.status}</span>
       </div>`;
@@ -381,6 +401,10 @@ export class DetailsPanel {
       this.renderFiles();
       return;
     }
+    if (action === 'discard-all') {
+      HostBridge.post({ type: 'discardAll' });
+      return;
+    }
     if (action === 'toggle-folder') {
       const folder = target.dataset.folder!;
       if (this.collapsedFolders.has(folder)) {
@@ -400,6 +424,10 @@ export class DetailsPanel {
 
     if (action === 'open-file') {
       HostBridge.post({ type: 'openFile', path: entry.file.path, ref: null });
+      return;
+    }
+    if (action === 'discard') {
+      HostBridge.post({ type: 'discardFile', file: entry.file, staged: entry.staged });
       return;
     }
     if (action === 'open-revision' && this.shown.kind === 'commit') {

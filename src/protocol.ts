@@ -170,6 +170,8 @@ export type WebviewMessage =
   | { type: 'openCommitDiff'; hash: string; parent: string | null; file: ChangedFile }
   | { type: 'openWorkingDiff'; file: ChangedFile; staged: boolean }
   | { type: 'openFile'; path: string; ref: string | null }
+  | { type: 'discardFile'; file: ChangedFile; staged: boolean }
+  | { type: 'discardAll' }
   | { type: 'remote'; action: RemoteAction }
   | { type: 'checkoutRef'; ref: RefInfo }
   | { type: 'search'; query: string }

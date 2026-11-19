@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { Repository } from './git/git';
 import { GitCommandError, GitService } from './git/GitService';
-import type { RefInfo, RemoteAction } from './protocol';
+import type { ChangedFile, RefInfo, RemoteAction, WorkingDetails } from './protocol';
 import { Settings } from './Settings';
 
 interface CommitTarget {
@@ -352,6 +352,89 @@ export class RepoActions {
     }
     const done: Record<typeof action, string> = { apply: 'Applied', pop: 'Popped', drop: 'Dropped' };
     await this.runLocal(['stash', action, stashRef], `${done[action]} ${stashRef}`);
+  }
+
+  // A change only in the working tree goes back to the staged version; a staged change takes the file back to the last
+  // commit. An untracked file goes to the Trash, so it can still be brought back.
+  async discardFile(file: ChangedFile, staged: boolean): Promise<void> {
+    const name = path.basename(file.path);
+    if (file.status === '?') {
+      if (await RepoActions.confirm(`Delete ${name}?`, 'The untracked file goes to the Trash.', 'Move to Trash')) {
+        await this.moveToTrash([file.path], `Moved ${name} to the Trash`);
+      }
+      return;
+    }
+
+    if (!staged) {
+      const detail = 'Its unstaged changes are lost; staged changes stay. This cannot be undone.';
+      if (await RepoActions.confirm(`Discard the changes to ${name}?`, detail, 'Discard')) {
+        await this.runLocal(['restore', '--worktree', '--', RepoActions.toPathspec(file.path)], `Discarded the changes to ${name}`);
+      }
+      return;
+    }
+
+    const detail =
+      file.status === 'A'
+        ? 'The new file is deleted, with its staged and unstaged changes. This cannot be undone.'
+        : 'The file goes back to the last commit; its staged and unstaged changes are lost. This cannot be undone.';
+    if (await RepoActions.confirm(`Discard the changes to ${name}?`, detail, 'Discard')) {
+      const paths = file.oldPath ? [file.oldPath, file.path] : [file.path];
+      await this.runLocal(
+        ['restore', '--source=HEAD', '--staged', '--worktree', '--', ...paths.map(RepoActions.toPathspec)],
+        `Discarded the changes to ${name}`,
+      );
+    }
+  }
+
+  async discardAll(details: WorkingDetails): Promise<void> {
+    const untracked = details.unstaged.filter((file) => file.status === '?').map((file) => file.path);
+    const tracked = new Set(
+      [...details.staged, ...details.unstaged].filter((file) => file.status !== '?').map((file) => file.path),
+    ).size;
+    if (tracked === 0 && untracked.length === 0) {
+      return;
+    }
+
+    const lines: string[] = [];
+    if (tracked > 0) {
+      lines.push(`Back to the last commit: ${RepoActions.countFiles(tracked, 'changed file')}. This cannot be undone.`);
+    }
+    if (untracked.length > 0) {
+      lines.push(`To the Trash: ${RepoActions.countFiles(untracked.length, 'untracked file')}.`);
+    }
+    if (!(await RepoActions.confirm('Discard all changes?', lines.join('\n'), 'Discard All'))) {
+      return;
+    }
+
+    if (tracked > 0) {
+      await this.runLocal(['restore', '--source=HEAD', '--staged', '--worktree', '--', '.'], 'Discarded all changes');
+    }
+    if (untracked.length > 0) {
+      await this.moveToTrash(untracked, `Moved ${RepoActions.countFiles(untracked.length, 'untracked file')} to the Trash`);
+    }
+  }
+
+  private async moveToTrash(paths: string[], successMessage: string): Promise<void> {
+    try {
+      for (const filePath of paths) {
+        await vscode.workspace.fs.delete(vscode.Uri.file(path.join(this.git.root, filePath)), { recursive: true, useTrash: true });
+      }
+      vscode.window.setStatusBarMessage(`$(check) Dendro: ${successMessage}`, 3000);
+    } catch (error) {
+      void vscode.window.showErrorMessage(`Dendro: could not move to the Trash. ${RepoActions.readErrorMessage(error)}`);
+    } finally {
+      await this.repo.status().catch(() => undefined);
+      this.onChanged();
+    }
+  }
+
+  // A file name with * or ? is a name, not a pattern.
+  private static toPathspec(filePath: string): string {
+    return `:(literal)${filePath}`;
+  }
+
+  private static countFiles(count: number, noun: string): string {
+    return `${count} ${noun}${count === 1 ? '' : 's'}`;
   }
 
   private async tryGit(args: string[]): Promise<string | null> {

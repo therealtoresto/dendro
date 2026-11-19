@@ -443,6 +443,31 @@
         "title": "Show Repository Insights",
         "category": "Dendro",
         "icon": "$(pulse)"
+      },
+      {
+        "command": "dendro.openWorkingFileChanges",
+        "title": "Open Changes",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.openWorkingFile",
+        "title": "Open File",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.copyWorkingFilePath",
+        "title": "Copy Relative Path",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.discardFileChanges",
+        "title": "Discard Changes…",
+        "category": "Dendro"
+      },
+      {
+        "command": "dendro.discardAllChanges",
+        "title": "Discard All Changes…",
+        "category": "Dendro"
       }
     ],
     "menus": {
@@ -573,6 +598,31 @@
           "command": "dendro.rebaseInteractive",
           "group": "4_integrate@3",
           "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'commit'"
+        },
+        {
+          "command": "dendro.openWorkingFileChanges",
+          "group": "1_open@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'workingFile' && fileStatus != '?' && fileStatus != 'U'"
+        },
+        {
+          "command": "dendro.openWorkingFile",
+          "group": "1_open@2",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'workingFile' && fileStatus != 'D'"
+        },
+        {
+          "command": "dendro.copyWorkingFilePath",
+          "group": "2_copy@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'workingFile'"
+        },
+        {
+          "command": "dendro.discardFileChanges",
+          "group": "9_discard@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'workingFile' && fileStatus != 'U'"
+        },
+        {
+          "command": "dendro.discardAllChanges",
+          "group": "9_discard@1",
+          "when": "(webviewId == 'dendro.graph' || webviewId == 'dendro.graphView') && webviewSection == 'working'"
         }
       ],
       "editor/title": [
@@ -869,6 +919,26 @@
         },
         {
           "command": "dendro.rebaseInteractive",
+          "when": "false"
+        },
+        {
+          "command": "dendro.openWorkingFileChanges",
+          "when": "false"
+        },
+        {
+          "command": "dendro.openWorkingFile",
+          "when": "false"
+        },
+        {
+          "command": "dendro.copyWorkingFilePath",
+          "when": "false"
+        },
+        {
+          "command": "dendro.discardFileChanges",
+          "when": "false"
+        },
+        {
+          "command": "dendro.discardAllChanges",
           "when": "false"
         }
       ],

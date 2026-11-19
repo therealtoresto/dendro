@@ -20,6 +20,7 @@ import type {
   RemoteSummary,
   StashInfo,
   WebviewMessage,
+  WorkingDetails,
 } from './protocol';
 import { RepoActions } from './RepoActions';
 import { RevisionContentProvider } from './RevisionContentProvider';
@@ -53,10 +54,13 @@ export interface MenuContext {
   refKind?: RefInfo['kind'];
   refPath?: string;
   stashRef?: string;
+  filePath?: string;
+  fileStaged?: boolean;
 }
 
 export type RefAction = 'checkout' | 'copyName' | 'delete' | 'rename' | 'push' | 'merge' | 'rebase' | 'openWorktree';
 export type StashAction = 'apply' | 'pop' | 'drop';
+export type WorkingFileAction = 'openChanges' | 'openFile' | 'copyPath' | 'discard';
 
 export interface GraphServices {
   avatars: AvatarService;
@@ -80,6 +84,8 @@ export class GraphController {
   private head: HeadInfo = EMPTY_HEAD;
   private refs: RefInfo[] = [];
   private stashes: StashInfo[] = [];
+  // The working changes last shown, for the menu of a file row.
+  private working: WorkingDetails = { staged: [], unstaged: [] };
   private commitsByHash = new Map<string, CommitInfo>();
   private statsByHash = new Map<string, CommitStats>();
   private loadedCount = 0;
@@ -257,6 +263,37 @@ export class GraphController {
     const stash = this.stashes.find((candidate) => candidate.ref === context.stashRef);
     if (stash && this.actions) {
       await this.actions.runStash(action, stash.ref, stash.message);
+    }
+  }
+
+  async runWorkingFileAction(action: WorkingFileAction, context: MenuContext): Promise<void> {
+    const file = (context.fileStaged ? this.working.staged : this.working.unstaged).find(
+      (candidate) => candidate.path === context.filePath,
+    );
+    if (!file) {
+      return;
+    }
+
+    switch (action) {
+      case 'openChanges':
+        await this.openWorkingDiff(file, context.fileStaged === true);
+        return;
+      case 'openFile':
+        await this.openFile(file.path, null);
+        return;
+      case 'copyPath':
+        await vscode.env.clipboard.writeText(file.path);
+        return;
+      case 'discard':
+        await this.actions?.discardFile(file, context.fileStaged === true);
+        return;
+    }
+  }
+
+  // Read again rather than taken from the panel: the menu of the graph row works without opening it.
+  async discardAll(): Promise<void> {
+    if (this.git && this.actions) {
+      await this.actions.discardAll(await this.git.getWorkingDetails());
     }
   }
 
@@ -793,6 +830,12 @@ export class GraphController {
       case 'openFile':
         await this.openFile(message.path, message.ref);
         return;
+      case 'discardFile':
+        await this.actions?.discardFile(message.file, message.staged);
+        return;
+      case 'discardAll':
+        await this.discardAll();
+        return;
       case 'remote':
         await this.actions?.runRemote(message.action);
         return;
@@ -860,6 +903,7 @@ export class GraphController {
       return;
     }
     const details = await this.git.getWorkingDetails();
+    this.working = details;
     this.post({ type: 'workingDetails', details });
   }
 

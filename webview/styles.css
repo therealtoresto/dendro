@@ -1456,6 +1456,10 @@ mark {
   margin-top: 16px;
 }
 
+.files-discard {
+  margin-left: auto;
+}
+
 .files-view {
   display: inline-flex;
   gap: 2px;

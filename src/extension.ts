@@ -10,7 +10,7 @@ import { BlameHovers } from './editor/BlameHovers';
 import { AnnotationKind, FileAnnotations } from './editor/FileAnnotations';
 import { LineBlame } from './editor/LineBlame';
 import type { GitExtension } from './git/git';
-import { GraphController, MenuContext, RefAction, StashAction } from './GraphController';
+import { GraphController, MenuContext, RefAction, StashAction, WorkingFileAction } from './GraphController';
 import type { CommitAction } from './protocol';
 import { GraphPanel, GraphViewProvider } from './GraphPanel';
 import { FileHistoryChart } from './history/FileHistoryChart';
@@ -55,6 +55,13 @@ const STASH_COMMANDS: Record<string, StashAction> = {
   'dendro.stashApply': 'apply',
   'dendro.stashPop': 'pop',
   'dendro.stashDrop': 'drop',
+};
+
+const WORKING_FILE_COMMANDS: Record<string, WorkingFileAction> = {
+  'dendro.openWorkingFileChanges': 'openChanges',
+  'dendro.openWorkingFile': 'openFile',
+  'dendro.copyWorkingFilePath': 'copyPath',
+  'dendro.discardFileChanges': 'discard',
 };
 
 const ANNOTATION_COMMANDS: Record<string, AnnotationKind> = {
@@ -232,6 +239,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       ),
     );
   }
+  for (const [command, action] of Object.entries(WORKING_FILE_COMMANDS)) {
+    subscriptions.push(
+      vscode.commands.registerCommand(command, (menu: MenuContext) =>
+        GraphController.findByViewId(menu?.webview)?.runWorkingFileAction(action, menu),
+      ),
+    );
+  }
+  subscriptions.push(
+    vscode.commands.registerCommand('dendro.discardAllChanges', (menu: MenuContext) =>
+      GraphController.findByViewId(menu?.webview)?.discardAll(),
+    ),
+  );
   for (const [command, kind] of Object.entries(ANNOTATION_COMMANDS)) {
     subscriptions.push(
       vscode.commands.registerCommand(command, (uri?: vscode.Uri) => {
