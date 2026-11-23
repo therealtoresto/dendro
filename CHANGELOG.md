@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1
+
+- Fetch remembers when it failed and why: the button is marked "failed" until a fetch works again, and its card shows
+  git's reason (an unknown host off the VPN, say) and the time of the last fetch that worked. Auto-fetch failures,
+  which never interrupt you, show there too.
+
 ## 0.14.0
 
 - Working Changes reads like a commit: your avatar, the branch badge, file counts and Stash / Discard / Source
