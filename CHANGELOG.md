@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.0
+
+- Working Changes reads like a commit: your avatar, the branch badge, file counts and Stash / Discard / Source
+  Control buttons. Write the message and commit right there (Cmd/Ctrl+Enter); stage and unstage a file or a whole
+  section with + and −.
+
 ## 0.13.0
 
 - Working Changes: discard the changes of a file from its row or its right-click menu, or all changes at once from
