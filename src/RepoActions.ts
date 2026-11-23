@@ -4,6 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { Repository } from './git/git';
+import { GitOutputParser } from './git/GitOutputParser';
 import { GitCommandError, GitService } from './git/GitService';
 import type { ChangedFile, RefInfo, RemoteAction, WorkingDetails } from './protocol';
 import { Settings } from './Settings';
@@ -553,7 +554,7 @@ export class RepoActions {
       vscode.window.setStatusBarMessage(`$(check) Dendro: ${action} done`, 3000);
       this.onResult(action, true);
     } catch (error) {
-      this.onResult(action, false, RepoActions.firstLine(RepoActions.readErrorMessage(error)));
+      this.onResult(action, false, GitOutputParser.parseFailureReason(RepoActions.readErrorMessage(error)));
       await this.showRemoteError(action, error);
     } finally {
       this.runningAction = null;
@@ -627,7 +628,7 @@ export class RepoActions {
     return choice === action;
   }
 
-  private static readErrorMessage(error: unknown): string {
+  static readErrorMessage(error: unknown): string {
     if (error instanceof GitCommandError) {
       return error.message;
     }

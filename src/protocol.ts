@@ -108,6 +108,13 @@ export interface RemoteSummary {
   kind: 'github' | 'gitlab' | 'other';
 }
 
+// The last fetch that failed after the last one that worked; `message` is git's own reason, one line.
+export interface FetchFailure {
+  message: string;
+  date: number;
+  automatic: boolean;
+}
+
 export interface GraphState {
   repos: RepoSummary[];
   root: string | null;
@@ -116,6 +123,7 @@ export interface GraphState {
   incoming: string[];
   remote: RemoteSummary | null;
   lastFetch: number | null;
+  fetchFailure: FetchFailure | null;
   settings: SettingValues;
   locale: string;
 }

@@ -12,6 +12,7 @@ type ButtonState =
   | 'publish'
   | 'blocked'
   | 'stale'
+  | 'failed'
   | 'busy'
   | 'success'
   | 'error'
@@ -40,7 +41,8 @@ const MINUTE = 60;
 const ACTIONS: RemoteAction[] = ['pull', 'push', 'fetch'];
 
 // Pull, Push and Fetch: each button shows by its color what it would do now (commits to pull, to push, a branch
-// to publish, a stale fetch), spins while running, flashes the result, and explains itself in a card on hover.
+// to publish, a stale or failed fetch), spins while running, flashes the result, and explains itself in a card on
+// hover. A failed fetch stays marked until one works, since auto-fetch fails quietly (off the VPN, say).
 export class RemoteButtons {
   private readonly buttons = new Map<RemoteAction, HTMLButtonElement>();
   private readonly results = new Map<RemoteAction, ActionResult>();
@@ -158,6 +160,9 @@ export class RemoteButtons {
     if (!state.root || !state.remote) {
       return { state: 'disabled', icon: 'fetch', label: 'Fetch', count: '', note: '' };
     }
+    if (state.fetchFailure) {
+      return { state: 'failed', icon: 'fetch', label: 'Fetch', count: '', note: '(failed)' };
+    }
     const note = state.lastFetch ? `(${this.dates!.formatCompact(state.lastFetch / 1000)})` : '(never)';
     return { state: this.isFetchStale() ? 'stale' : 'idle', icon: 'fetch', label: 'Fetch', count: '', note };
   }
@@ -266,24 +271,39 @@ export class RemoteButtons {
     }
 
     const result = this.readResult(action);
-    if (result && !result.ok && result.message) {
+    if (action !== 'fetch' && result && !result.ok && result.message) {
       lines.push(`<div class="tp-error">Last ${action} failed: ${Format.escapeHtml(result.message)}</div>`);
     }
     return lines.join('');
   }
 
   private describeLastFetch(): string {
-    const { lastFetch } = this.state!;
-    if (!lastFetch) {
-      return '<div class="tp-muted">Never fetched</div>';
+    const { lastFetch, fetchFailure } = this.state!;
+    const lines: string[] = [];
+    if (fetchFailure) {
+      const how = fetchFailure.automatic ? 'Auto-fetch' : 'Fetch';
+      lines.push(
+        `<div class="tp-error">${how} failed ${this.describeWhen(fetchFailure.date)}</div>` +
+          `<div class="tp-reason">${Format.escapeHtml(fetchFailure.message || 'Git gave no reason')}</div>`,
+      );
     }
-    const seconds = lastFetch / 1000;
+    const label = fetchFailure ? 'Last successful fetch' : 'Last fetched';
+    lines.push(
+      lastFetch
+        ? `<div class="tp-muted">${label} ${this.describeWhen(lastFetch)}</div>`
+        : `<div class="tp-muted">${fetchFailure ? 'Never fetched successfully' : 'Never fetched'}</div>`,
+    );
+    return lines.join('');
+  }
+
+  private describeWhen(timeMs: number): string {
+    const seconds = timeMs / 1000;
     const dates = this.dates!;
-    return `<div class="tp-muted">Last fetched ${Format.escapeHtml(dates.formatAgo(seconds))} <i>(${Format.escapeHtml(dates.formatFull(seconds))})</i></div>`;
+    return `${Format.escapeHtml(dates.formatAgo(seconds))} <i>(${Format.escapeHtml(dates.formatFull(seconds))})</i>`;
   }
 
   private describeAutoFetch(): string {
-    const { settings, lastFetch } = this.state!;
+    const { settings, lastFetch, fetchFailure } = this.state!;
     const gear = `<button class="tp-gear" data-open-settings title="Fetch settings">${Icons.render('gear', 13)}</button>`;
     if (settings['graph.autoFetch.enabled'] === false) {
       return `<div class="tp-auto"><span>${Icons.render('close', 12)} Auto-fetch is off</span>${gear}</div>`;
@@ -291,7 +311,9 @@ export class RemoteButtons {
 
     const minutes = Number(settings['graph.autoFetch.intervalMinutes'] ?? 5);
     let next = '';
-    if (lastFetch) {
+    if (fetchFailure) {
+      next = ' · tries less often while it fails';
+    } else if (lastFetch) {
       const left = Math.max(0, Math.round((lastFetch + minutes * MINUTE * 1000 - Date.now()) / (MINUTE * 1000)));
       next = left <= 0 ? ' · next any moment' : ` · next in about ${this.plural(left, 'minute')}`;
     }

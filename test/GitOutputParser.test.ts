@@ -221,4 +221,22 @@ describe('GitOutputParser.parseActivityStats', () => {
     assert.deepEqual(stats.get('aaa'), { additions: 3, deletions: 1, files: ['src/a.ts', 'logo.png'] });
     assert.deepEqual(stats.get('bbb'), { additions: 10, deletions: 0, files: ['README.md'] });
   });
+
+  it('reads the cause of a failed fetch from git stderr', () => {
+    const ssh =
+      'ssh: Could not resolve hostname git.example.com: nodename nor servname provided, or not known\n' +
+      'fatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\n';
+    const https = "fatal: unable to access 'https://git.example.com/a.git/': Could not resolve host: git.example.com\n";
+
+    assert.equal(
+      GitOutputParser.parseFailureReason(ssh),
+      'ssh: Could not resolve hostname git.example.com: nodename nor servname provided, or not known',
+    );
+    assert.equal(
+      GitOutputParser.parseFailureReason(https),
+      "unable to access 'https://git.example.com/a.git/': Could not resolve host: git.example.com",
+    );
+    assert.equal(GitOutputParser.parseFailureReason('Timed out\n'), 'Timed out');
+    assert.equal(GitOutputParser.parseFailureReason(''), '');
+  });
 });

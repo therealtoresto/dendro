@@ -462,6 +462,14 @@ export class GitOutputParser {
     };
   }
 
+  // Git prints progress, hints and "Please make sure you have the correct access rights" around the real cause;
+  // the cause is the first `fatal:` / `error:` / `ssh:` line, or the first line when there is none.
+  static parseFailureReason(stderr: string): string {
+    const lines = stderr.split('\n').map((line) => line.trim()).filter(Boolean);
+    const cause = lines.find((line) => /^(fatal|error|ssh):/i.test(line)) ?? lines[0] ?? '';
+    return cause.replace(/^(fatal|error):\s*/i, '');
+  }
+
   static parseAheadBehind(output: string): { ahead: number; behind: number } {
     const [ahead, behind] = output.trim().split(/\s+/).map(Number);
     return { ahead: ahead || 0, behind: behind || 0 };

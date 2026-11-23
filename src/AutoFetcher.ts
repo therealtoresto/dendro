@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 import type { API } from './git/git';
+import { GitOutputParser } from './git/GitOutputParser';
 import { GitService } from './git/GitService';
+import type { FetchFailure } from './protocol';
+import { RepoActions } from './RepoActions';
 import { Settings } from './Settings';
 
 const STARTUP_DELAY_MS = 15_000;
@@ -14,11 +17,12 @@ export interface AutoFetchActivity {
 
 // Fetches every open repository in the background, so the graph shows commits that are not pulled yet. A repository
 // fetched recently by anything else (a manual fetch, the built-in auto fetch) is skipped; one that keeps failing,
-// e.g. off the VPN, is retried at a growing interval and never interrupts the user.
+// e.g. off the VPN, is retried at a growing interval and never interrupts the user: the graph shows why it failed.
 export class AutoFetcher implements vscode.Disposable {
   private timer: NodeJS.Timeout | undefined;
   private readonly activityEmitter = new vscode.EventEmitter<AutoFetchActivity>();
   private readonly failures = new Map<string, number>();
+  private readonly lastFailures = new Map<string, FetchFailure>();
   private readonly disposables: vscode.Disposable[] = [];
 
   readonly onDidChangeActivity = this.activityEmitter.event;
@@ -40,6 +44,20 @@ export class AutoFetcher implements vscode.Disposable {
     for (const disposable of this.disposables) {
       disposable.dispose();
     }
+  }
+
+  // A failure counts only until a fetch works again, by Dendro or by anything else that writes FETCH_HEAD.
+  getFailure(root: string, lastFetch: number | null): FetchFailure | null {
+    const failure = this.lastFailures.get(root) ?? null;
+    return failure && (lastFetch === null || failure.date > lastFetch) ? failure : null;
+  }
+
+  recordResult(root: string, failureMessage: string | null, automatic: boolean): void {
+    if (failureMessage === null) {
+      this.lastFailures.delete(root);
+      return;
+    }
+    this.lastFailures.set(root, { message: failureMessage, date: Date.now(), automatic });
   }
 
   private schedule(delay: number): void {
@@ -70,8 +88,10 @@ export class AutoFetcher implements vscode.Disposable {
       try {
         await repo.fetch({ all: true, prune: Settings.get<boolean>('graph.fetchPrune') });
         this.failures.delete(root);
-      } catch {
+        this.recordResult(root, null, true);
+      } catch (error) {
         this.failures.set(root, failures + 1);
+        this.recordResult(root, GitOutputParser.parseFailureReason(RepoActions.readErrorMessage(error)), true);
       } finally {
         this.activityEmitter.fire({ root, running: false });
       }

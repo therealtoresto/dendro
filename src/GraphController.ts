@@ -150,6 +150,9 @@ export class GraphController {
         }
         this.autoFetching = activity.running;
         this.post({ type: 'busy', action: activity.running ? 'fetch' : null, automatic: true });
+        if (!activity.running) {
+          this.scheduleRefresh(false);
+        }
       }),
     );
 
@@ -433,7 +436,12 @@ export class GraphController {
       this.git,
       (action) => this.post({ type: 'busy', action }),
       () => this.scheduleRefresh(false),
-      (action, ok, message) => this.post({ type: 'remoteResult', action, ok, message }),
+      (action, ok, message) => {
+        if (action === 'fetch') {
+          this.services.autoFetcher.recordResult(root, ok ? null : message ?? '', false);
+        }
+        this.post({ type: 'remoteResult', action, ok, message });
+      },
     );
     this.repoListeners.push(repo.state.onDidChange(() => this.scheduleRefresh(false)));
     this.scheduleRefresh(true);
@@ -525,6 +533,7 @@ export class GraphController {
       incoming,
       remote,
       lastFetch,
+      fetchFailure: this.git ? this.services.autoFetcher.getFailure(this.git.root, lastFetch) : null,
       settings: Settings.readAll(),
       locale: Settings.getEditorLocale(),
     };
