@@ -147,6 +147,8 @@ export interface CommitDetails {
 export interface WorkingDetails {
   staged: ChangedFile[];
   unstaged: ChangedFile[];
+  // Who the next commit is by: git's user.name and user.email.
+  author?: { name: string; email: string };
 }
 
 export type RemoteAction = 'pull' | 'push' | 'fetch';
@@ -172,6 +174,11 @@ export type WebviewMessage =
   | { type: 'openFile'; path: string; ref: string | null }
   | { type: 'discardFile'; file: ChangedFile; staged: boolean }
   | { type: 'discardAll' }
+  | { type: 'stage'; files: ChangedFile[] | 'all' }
+  | { type: 'unstage'; files: ChangedFile[] | 'all' }
+  | { type: 'commitChanges'; message: string }
+  | { type: 'stashChanges' }
+  | { type: 'openSourceControl' }
   | { type: 'remote'; action: RemoteAction }
   | { type: 'checkoutRef'; ref: RefInfo }
   | { type: 'search'; query: string }
@@ -195,4 +202,5 @@ export type HostMessage =
   | { type: 'avatars'; avatars: Record<string, string>; reset?: boolean }
   | { type: 'hoverInfo'; info: CommitHoverInfo }
   | { type: 'setSearch'; query: string }
+  | { type: 'committed' }
   | { type: 'error'; message: string };

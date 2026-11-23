@@ -335,6 +335,10 @@ export class GitService {
     GitOutputParser.attachStats(details.staged, GitOutputParser.parseNumstat(stagedStats));
     GitOutputParser.attachStats(details.unstaged, GitOutputParser.parseNumstat(unstagedStats));
 
+    const [name, email] = await Promise.all([this.readOptional(['config', 'user.name']), this.readOptional(['config', 'user.email'])]);
+    if (name || email) {
+      details.author = { name: name ?? email ?? '', email: email ?? '' };
+    }
     return details;
   }
 

@@ -4,6 +4,7 @@ import type {
   CommitDetails,
   CommitInfo,
   ComparisonDetails,
+  HeadInfo,
   RefInfo,
   WorkingDetails,
   WorkingSummary,
@@ -16,11 +17,18 @@ import { Format } from './Format';
 import { IconName, Icons } from './Icons';
 import { HostBridge } from './HostBridge';
 import { RefBadges } from './RefBadges';
-import { WorkingCounters } from './WorkingCounters';
 
 interface FileEntry {
   file: ChangedFile;
   staged: boolean;
+}
+
+// Where the working changes stand: the branch they will be committed to and the picture of their author.
+export interface WorkingPlace {
+  head: HeadInfo;
+  refs: RefInfo[];
+  laneColor: string;
+  avatar: string | undefined;
 }
 
 interface DetailsHandlers {
@@ -33,6 +41,12 @@ type Shown =
   | { kind: 'commit'; details: CommitDetails }
   | { kind: 'working'; details: WorkingDetails }
   | { kind: 'comparison'; details: ComparisonDetails };
+
+const WORKING_ACTIONS: { action: string; icon: IconName; label: string; title: string }[] = [
+  { action: 'stash', icon: 'box', label: 'Stash', title: 'Stash all changes, untracked files too' },
+  { action: 'discard-all', icon: 'undo', label: 'Discard', title: 'Discard all changes…' },
+  { action: 'source-control', icon: 'branch', label: 'Source Control', title: 'Open Source Control' },
+];
 
 const COMMIT_ACTIONS: { action: CommitAction; icon: IconName; label: string; title: string }[] = [
   { action: 'checkout', icon: 'check', label: 'Checkout', title: 'Check out this commit' },
@@ -63,6 +77,8 @@ export class DetailsPanel {
   private filterText = '';
   private fileView: 'list' | 'tree' = HostBridge.readViewState().fileView ?? 'list';
   private readonly collapsedFolders = new Set<string>();
+  // The message being written survives the panel drawing itself again as the files change.
+  private commitDraft = '';
 
   constructor(
     private readonly element: HTMLElement,
@@ -74,6 +90,17 @@ export class DetailsPanel {
       if (input.classList.contains('files-filter')) {
         this.filterText = input.value;
         this.renderFiles();
+      }
+      if (input.classList.contains('commit-input')) {
+        this.commitDraft = input.value;
+        this.updateCommitButton();
+      }
+    });
+    element.addEventListener('keydown', (event) => {
+      const input = event.target as HTMLElement;
+      if (input.classList.contains('commit-input') && event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        this.commit();
       }
     });
     this.showMessage('Select a commit to see its changes.');
@@ -217,7 +244,7 @@ export class DetailsPanel {
     this.renderFiles();
   }
 
-  showWorking(details: WorkingDetails, summary: WorkingSummary): void {
+  showWorking(details: WorkingDetails, summary: WorkingSummary, place: WorkingPlace): void {
     this.element.classList.remove('details-loading');
     const keepFilter = this.shown.kind === 'working';
     this.shown = { kind: 'working', details };
@@ -229,23 +256,121 @@ export class DetailsPanel {
       this.filterText = '';
     }
 
+    const focus = DetailsPanel.readCommitFocus();
+    const author = details.author;
+    const picture = author
+      ? `<span class="avatar avatar-large" style="background:${AvatarStyle.getColor(author.email)}">${AvatarStyle.renderArt(author.email)}${place.avatar ? `<img class="avatar-image" src="${place.avatar}" alt="">` : ''}</span>`
+      : `<span class="avatar avatar-large working-avatar">${Icons.render('file', 18)}</span>`;
+    const badges = RefBadges.renderAll(place.refs, place.head.branch, place.laneColor);
+    const where = place.head.branch
+      ? ''
+      : `<span class="chip mono" title="HEAD is not on a branch">${Icons.render('branch', 12)}detached at ${place.head.hash?.slice(0, 7) ?? '—'}</span>`;
+    const lines = summary.lines ? DetailsPanel.renderLineCounts(summary.lines.additions, summary.lines.deletions) : '';
+
     this.element.innerHTML = `
       <div class="details-scroll">
-        <div class="details-working-title">${Icons.render('file', 16)} Working Changes</div>
-        <div class="details-meta">
-          ${WorkingCounters.render(summary, true)}
-          ${summary.lines ? `<span class="details-counts">${DetailsPanel.renderLineCounts(summary.lines.additions, summary.lines.deletions)}</span>` : ''}
+        <div class="details-header">
+          <div class="details-author">
+            ${picture}
+            <div class="details-author-text">
+              <div class="details-author-name">Working Changes</div>
+              <div class="details-muted">${author ? `${Format.escapeHtml(author.name)} · ` : ''}not committed yet</div>
+            </div>
+          </div>
+          <div class="details-meta">
+            ${badges ? `<span class="details-badges">${badges}</span>` : where}
+            ${summary.staged > 0 ? `<span class="wip-count wip-staged" title="Staged for the next commit">${summary.staged} staged</span>` : ''}
+            <span class="details-counts">${DetailsPanel.renderWorkingCounts(summary)}</span>
+          </div>
+          <div class="details-actions">${DetailsPanel.renderWorkingActions()}</div>
         </div>
-        <div class="details-muted details-working-note">Uncommitted changes in the working tree. Stage and commit them from Source Control.</div>
+        <div class="details-message commit-box">
+          <textarea class="commit-input" rows="3" placeholder="Commit message" spellcheck="true">${Format.escapeHtml(this.commitDraft)}</textarea>
+          <div class="commit-row">
+            <span class="details-muted">${DetailsPanel.describeCommit(details)}</span>
+            <button class="details-action commit-button" data-action="commit" title="Commit (${DetailsPanel.getCommitShortcut()})">${Icons.render('check', 13)}Commit</button>
+          </div>
+        </div>
         <div class="files-section">
-          <div class="files-header"><span>Files</span><span class="files-count">${this.entries.length}</span>${this.renderViewSwitch()}
-            <button class="icon-button files-discard" data-action="discard-all" title="Discard all changes…">${Icons.render('undo', 13)}</button>
+          <div class="files-header">
+            <span>Files changed</span><span class="files-count">${new Set(this.entries.map((entry) => entry.file.path)).size}</span>
+            <span class="files-lines">${lines}</span>
+            ${this.renderViewSwitch()}
           </div>
           <input class="files-filter" type="text" placeholder="Filter files…" value="${Format.escapeHtml(this.filterText)}" spellcheck="false">
           <div class="files-list"></div>
         </div>
       </div>`;
     this.renderFiles();
+    this.updateCommitButton();
+    DetailsPanel.restoreCommitFocus(this.element, focus);
+  }
+
+  // Called once the commit is made: the message is used up.
+  clearCommitDraft(): void {
+    this.commitDraft = '';
+    const input = this.element.querySelector<HTMLTextAreaElement>('.commit-input');
+    if (input) {
+      input.value = '';
+    }
+    this.updateCommitButton();
+  }
+
+  private commit(): void {
+    const message = this.commitDraft.trim();
+    if (message) {
+      HostBridge.post({ type: 'commitChanges', message });
+    }
+  }
+
+  private updateCommitButton(): void {
+    const button = this.element.querySelector<HTMLButtonElement>('.commit-button');
+    if (button) {
+      button.disabled = !this.commitDraft.trim();
+    }
+  }
+
+  private static describeCommit(details: WorkingDetails): string {
+    if (details.staged.length > 0) {
+      return `Commits the ${details.staged.length === 1 ? 'staged file' : `${details.staged.length} staged files`}.`;
+    }
+    return 'Nothing staged: Commit stages every change first.';
+  }
+
+  private static getCommitShortcut(): string {
+    return navigator.platform.toLowerCase().includes('mac') ? '⌘Enter' : 'Ctrl+Enter';
+  }
+
+  private static readCommitFocus(): { start: number; end: number } | null {
+    const active = document.activeElement;
+    if (active instanceof HTMLTextAreaElement && active.classList.contains('commit-input')) {
+      return { start: active.selectionStart, end: active.selectionEnd };
+    }
+    return null;
+  }
+
+  private static restoreCommitFocus(element: HTMLElement, focus: { start: number; end: number } | null): void {
+    const input = element.querySelector<HTMLTextAreaElement>('.commit-input');
+    if (input && focus) {
+      input.focus();
+      input.setSelectionRange(focus.start, focus.end);
+    }
+  }
+
+  private static renderWorkingCounts(summary: WorkingSummary): string {
+    const conflicted = summary.conflicted > 0 ? `<span class="count-conflicted" title="Files in conflict">!${summary.conflicted}</span>` : '';
+    return (
+      `<span class="count-added" title="Files added">+${summary.added}</span>` +
+      `<span class="count-modified" title="Files modified">~${summary.modified}</span>` +
+      `<span class="count-deleted" title="Files deleted">−${summary.deleted}</span>${conflicted}`
+    );
+  }
+
+  private static renderWorkingActions(): string {
+    return WORKING_ACTIONS.map(
+      (item) =>
+        `<button class="details-action" data-action="${item.action}" title="${item.title}">${Icons.render(item.icon, 13)}${item.label}</button>`,
+    ).join('');
   }
 
   private renderViewSwitch(): string {
@@ -276,8 +401,14 @@ export class DetailsPanel {
       .map(({ title, staged }) => {
         const total = this.entries.filter((entry) => entry.staged === staged).length;
         const rows = this.renderFileRows((entry) => entry.staged === staged && matches(entry), title);
+        const all =
+          total === 0
+            ? ''
+            : staged
+              ? `<button class="icon-button files-section-action" data-action="unstage-all" title="Unstage all">${Icons.render('minus', 13)}</button>`
+              : `<button class="icon-button files-section-action" data-action="stage-all" title="Stage all">${Icons.render('plus', 13)}</button>`;
         return (
-          `<div class="files-subheader"><span>${title}</span><span class="files-count">${total}</span></div>` +
+          `<div class="files-subheader"><span>${title}</span><span class="files-count">${total}</span>${all}</div>` +
           (rows || `<div class="details-muted files-none">${total === 0 ? 'Nothing here.' : 'No files match.'}</div>`)
         );
       })
@@ -328,6 +459,10 @@ export class DetailsPanel {
         ? `<button class="icon-button" data-action="open-revision" data-index="${index}" title="Open the file as of this commit">${Icons.render('history', 13)}</button>`
         : '';
     const isWorking = this.shown.kind === 'working';
+    const staged = this.entries[index].staged;
+    const stage = isWorking
+      ? `<button class="icon-button" data-action="${staged ? 'unstage' : 'stage'}" data-index="${index}" title="${staged ? 'Unstage' : 'Stage'}">${Icons.render(staged ? 'minus' : 'plus', 13)}</button>`
+      : '';
     // A conflict is settled in the merge editor, not thrown away from a list.
     const discard =
       isWorking && file.status !== 'U'
@@ -338,7 +473,7 @@ export class DetailsPanel {
           JSON.stringify({
             webviewSection: 'workingFile',
             filePath: file.path,
-            fileStaged: this.entries[index].staged,
+            fileStaged: staged,
             fileStatus: file.status,
             preventDefaultContextMenuItems: true,
           }),
@@ -355,6 +490,7 @@ export class DetailsPanel {
           ${atRevision}
           <button class="icon-button" data-action="open-file" data-index="${index}" title="Open the working file">${Icons.render('file', 13)}</button>
           ${discard}
+          ${stage}
         </span>
         <span class="file-status status-${file.status === '?' ? 'untracked' : file.status}" title="${STATUS_NAMES[file.status]}">${file.status === '?' ? 'U' : file.status}</span>
       </div>`;
@@ -405,6 +541,22 @@ export class DetailsPanel {
       HostBridge.post({ type: 'discardAll' });
       return;
     }
+    if (action === 'stash') {
+      HostBridge.post({ type: 'stashChanges' });
+      return;
+    }
+    if (action === 'source-control') {
+      HostBridge.post({ type: 'openSourceControl' });
+      return;
+    }
+    if (action === 'commit') {
+      this.commit();
+      return;
+    }
+    if (action === 'stage-all' || action === 'unstage-all') {
+      HostBridge.post({ type: action === 'stage-all' ? 'stage' : 'unstage', files: 'all' });
+      return;
+    }
     if (action === 'toggle-folder') {
       const folder = target.dataset.folder!;
       if (this.collapsedFolders.has(folder)) {
@@ -428,6 +580,10 @@ export class DetailsPanel {
     }
     if (action === 'discard') {
       HostBridge.post({ type: 'discardFile', file: entry.file, staged: entry.staged });
+      return;
+    }
+    if (action === 'stage' || action === 'unstage') {
+      HostBridge.post({ type: action, files: [entry.file] });
       return;
     }
     if (action === 'open-revision' && this.shown.kind === 'commit') {

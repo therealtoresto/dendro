@@ -339,3 +339,18 @@
     transform: scale(0.95);
   }
 }
+
+@layer glass {
+  .commit-input {
+    border-radius: var(--glass-radius-sm);
+  }
+
+  .details-action.commit-button,
+  .details-action.commit-button:hover {
+    background: var(--vscode-button-background);
+  }
+
+  .details-action.commit-button:disabled {
+    transform: none;
+  }
+}

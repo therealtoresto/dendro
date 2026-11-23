@@ -451,15 +451,9 @@ export class RepositoryViews implements vscode.Disposable {
 
   private async saveStash(): Promise<void> {
     const repo = this.findRepository();
-    if (!repo) {
-      return;
+    if (repo) {
+      await this.createActions(repo.rootUri.fsPath)?.actions.stashAll();
     }
-    const message = await vscode.window.showInputBox({ title: 'Stash all changes', prompt: 'A message to find it by later (optional)' });
-    if (message === undefined) {
-      return;
-    }
-    const args = ['stash', 'push', '--include-untracked', ...(message.trim() ? ['-m', message.trim()] : [])];
-    await this.runGit(repo.rootUri.fsPath, args, 'Stashed the changes');
   }
 
   private static buildTooltip(name: string, subject: string, date: string, upstream?: string): vscode.MarkdownString {

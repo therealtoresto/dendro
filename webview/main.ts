@@ -185,8 +185,17 @@ class GraphApp {
         return;
       case 'workingDetails':
         if (this.selectedKey === WORKING_CHANGES_KEY && this.state) {
-          this.details.showWorking(message.details, this.state.working);
+          const head = this.state.head;
+          this.details.showWorking(message.details, this.state.working, {
+            head,
+            refs: head.hash ? (this.refsByHash.get(head.hash) ?? []) : [],
+            laneColor: this.getLaneColor(WORKING_CHANGES_KEY),
+            avatar: message.details.author ? this.avatars.get(message.details.author.email.toLowerCase()) : undefined,
+          });
         }
+        return;
+      case 'committed':
+        this.details.clearCommitDraft();
         return;
       case 'searchResult':
         this.onSearchResult(message.query, message.hashes);
@@ -736,7 +745,7 @@ class GraphApp {
       this.toolbar.focusSearch();
       return;
     }
-    if (target.tagName === 'INPUT' || this.rows.length === 0) {
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || this.rows.length === 0) {
       return;
     }
 

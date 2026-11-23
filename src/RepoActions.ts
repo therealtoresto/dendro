@@ -386,6 +386,56 @@ export class RepoActions {
     }
   }
 
+  async stage(files: ChangedFile[] | 'all'): Promise<void> {
+    if (files === 'all') {
+      await this.runLocal(['add', '--all'], 'Staged all changes');
+      return;
+    }
+    const name = files.length === 1 ? path.basename(files[0].path) : RepoActions.countFiles(files.length, 'file');
+    await this.runLocal(['add', '--all', '--', ...files.map((file) => RepoActions.toPathspec(file.path))], `Staged ${name}`);
+  }
+
+  async unstage(files: ChangedFile[] | 'all'): Promise<void> {
+    if (files === 'all') {
+      await this.runLocal(['restore', '--staged', '--', '.'], 'Unstaged all changes');
+      return;
+    }
+    const name = files.length === 1 ? path.basename(files[0].path) : RepoActions.countFiles(files.length, 'file');
+    const paths = files.flatMap((file) => (file.oldPath ? [file.oldPath, file.path] : [file.path]));
+    await this.runLocal(['restore', '--staged', '--', ...paths.map(RepoActions.toPathspec)], `Unstaged ${name}`);
+  }
+
+  // As in Source Control: with nothing staged, every change goes into the commit once you agree.
+  async commit(message: string, details: WorkingDetails): Promise<boolean> {
+    if (details.staged.length === 0) {
+      const total = details.unstaged.length;
+      if (total === 0) {
+        return false;
+      }
+      const detail = `Stage all ${RepoActions.countFiles(total, 'changed file')} and commit them?`;
+      if (!(await RepoActions.confirm('Nothing is staged.', detail, 'Stage All and Commit'))) {
+        return false;
+      }
+      if (!(await this.runLocal(['add', '--all'], 'Staged all changes'))) {
+        return false;
+      }
+    }
+
+    const subject = RepoActions.firstLine(message);
+    return vscode.window.withProgress({ location: vscode.ProgressLocation.Window, title: 'Dendro: committing' }, () =>
+      this.runLocal(['commit', '-m', message], `Committed "${subject}"`),
+    );
+  }
+
+  async stashAll(): Promise<void> {
+    const message = await vscode.window.showInputBox({ title: 'Stash all changes', prompt: 'A message to find it by later (optional)' });
+    if (message === undefined) {
+      return;
+    }
+    const args = ['stash', 'push', '--include-untracked', ...(message.trim() ? ['-m', message.trim()] : [])];
+    await this.runLocal(args, 'Stashed the changes');
+  }
+
   async discardAll(details: WorkingDetails): Promise<void> {
     const untracked = details.unstaged.filter((file) => file.status === '?').map((file) => file.path);
     const tracked = new Set(
@@ -533,10 +583,11 @@ export class RepoActions {
     });
   }
 
-  private async runLocal(args: string[], successMessage: string, env: Record<string, string> = {}): Promise<void> {
+  private async runLocal(args: string[], successMessage: string, env: Record<string, string> = {}): Promise<boolean> {
     try {
       await this.git.run(args, undefined, env);
       vscode.window.setStatusBarMessage(`$(check) Dendro: ${successMessage}`, 3000);
+      return true;
     } catch (error) {
       const message = RepoActions.readErrorMessage(error);
       if (/conflict/i.test(message)) {
@@ -553,6 +604,7 @@ export class RepoActions {
           detail: message,
         });
       }
+      return false;
     } finally {
       await this.repo.status().catch(() => undefined);
       this.onChanged();

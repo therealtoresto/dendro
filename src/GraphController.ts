@@ -836,6 +836,23 @@ export class GraphController {
       case 'discardAll':
         await this.discardAll();
         return;
+      case 'stage':
+        await this.actions?.stage(message.files);
+        return;
+      case 'unstage':
+        await this.actions?.unstage(message.files);
+        return;
+      case 'commitChanges':
+        if (this.git && this.actions && (await this.actions.commit(message.message, await this.git.getWorkingDetails()))) {
+          this.post({ type: 'committed' });
+        }
+        return;
+      case 'stashChanges':
+        await this.actions?.stashAll();
+        return;
+      case 'openSourceControl':
+        await vscode.commands.executeCommand('workbench.view.scm');
+        return;
       case 'remote':
         await this.actions?.runRemote(message.action);
         return;
